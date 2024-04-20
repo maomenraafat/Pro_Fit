@@ -70,7 +70,6 @@ const signIn = catchAsyncError(async (req, res, next) => {
     res.status(200).json({ message: "success", token });
   }
 });
-//Logout
 const logoutAdmin = catchAsyncError(async (req, res, next) => {
   const adminId = req.user.payload.id;
   const admin = await adminModel.findById(adminId);

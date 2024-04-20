@@ -65,46 +65,6 @@ async function handleImageUpload(trainer, file) {
   return null;
 }
 
-// const updatePersonalInfo = catchAsyncError(async (req, res, next) => {
-//   const trainerId = req.user.payload.id;
-//   const { country, state, city, phoneNumber, birthDate, biography, gender } = req.body;
-//   let updateData = { country, state, city, phoneNumber, birthDate, biography, gender };
-
-//   if (req.files["profilePhoto"] && req.files["profilePhoto"][0]) {
-//     const file = req.files["profilePhoto"][0];
-//     const folderName = determineFolderName(req, "profilePhoto");
-//     const fileName = file.filename;
-
-//     const result = await cloudinary.uploader.upload(file.path, {
-//       folder: folderName,
-//       public_id: fileName.replace(/\.jpeg|\.jpg|\.png|\.gif/, ""),
-//       resource_type: "auto",
-//     }).catch(error => {
-//       console.error("Upload failed:", error);
-//       next(new AppError("Failed to upload image to Cloudinary: " + error.message, 500));
-//       return null;
-//     });
-
-//     if (!result) {
-//       return; // Stop execution if there was an error
-//     }
-
-//     // Delete the local file after uploading to Cloudinary
-//     fs.unlinkSync(file.path);
-//     updateData.profilePhoto = result.secure_url;
-//   }
-
-//   const newTrainer = await trainerModel.findByIdAndUpdate(trainerId, updateData, { new: true, runValidators: true });
-//   if (!newTrainer) {
-//     return next(new AppError("Data not found", 404));
-//   }
-
-//   res.status(201).json({
-//     success: true,
-//     message: "Data updated successfully",
-//     trainer: newTrainer,
-//   });
-// });
 const updatePersonalInfo = async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const { country, state, city, phoneNumber, birthDate, biography, gender } =
@@ -189,8 +149,6 @@ const updateProfessionalCredentials = catchAsyncError(
 
 const getProfessionalCredentials = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
-
-  // Selecting specific fields
   const trainer = await trainerModel
     .findById(trainerId)
     .select("specializations yearsOfExperience  socialMedia");
@@ -264,8 +222,6 @@ const getTrainerAbout = catchAsyncError(async (req, res, next) => {
 });
 const updateTrainerAbout = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-
-  // Combining the fields from personal and professional info except the profile photo
   const {
     country,
     state,
@@ -292,7 +248,6 @@ const updateTrainerAbout = catchAsyncError(async (req, res, next) => {
     socialMedia,
   };
 
-  // Since we're not handling the profile photo, we'll omit the image upload logic
   const data = await trainerModel.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,

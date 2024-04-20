@@ -9,7 +9,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Generate a hash for an image file using arrow function
 const generateImageHash = (filePath) => {
   const fileBuffer = readFileSync(filePath);
   const hashSum = createHash("sha256");
@@ -17,7 +16,6 @@ const generateImageHash = (filePath) => {
   return hashSum.digest("hex");
 };
 
-// Upload an image to Cloudinary using arrow function
 const uploadImageToCloudinary = async (file, folderName, existingImageHash) => {
   const newImageHash = generateImageHash(file.path);
 

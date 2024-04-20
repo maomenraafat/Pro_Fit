@@ -162,78 +162,6 @@ const getAllTrainersRequests = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "success", data });
 });
 
-// const manageTraineeBlockStatus = catchAsyncError(async (req, res, next) => {
-//   // Check if requester is admin
-//   if (!req.user || !req.user.payload.isAdmin) {
-//     return res.status(403).json({
-//       success: false,
-//       message:
-//         "Access denied. Only admins can manage block status of trainees.",
-//     });
-//   }
-//   // Check the action (block/unblock)
-//   const action = req.body.action; // Assuming action is sent in request body
-//   // Proceed with updating the block status of the trainee
-//   const trainee = await traineeModel.findById(req.params.id);
-//   if (!trainee) {
-//     return res
-//       .status(404)
-//       .json({ success: false, message: "Trainee not found." });
-//   }
-//   trainee.isBlock = action === "block";
-//   await trainee.save();
-//   res.status(200).json({
-//     success: true,
-//     message:
-//       action === "block"
-//         ? "Trainee blocked successfully."
-//         : "Trainee unblocked successfully.",
-//   });
-// });
-
-// const manageTrainerBlockStatus = catchAsyncError(async (req, res, next) => {
-//   // Check if requester is admin
-//   if (!req.user || !req.user.payload.isAdmin) {
-//     return res.status(403).json({
-//       success: false,
-//       message:
-//         "Access denied. Only admins can manage block status of trainers.",
-//     });
-//   }
-
-//   // Check the action (block/unblock)
-//   const action = req.body.action; // Assuming action is sent in request body
-
-//   // Proceed with updating the block status of the trainer
-//   const trainer = await adminModel.findById(req.params.id);
-//   if (!trainer) {
-//     return res
-//       .status(404)
-//       .json({ success: false, message: "Trainer not found." });
-//   }
-
-//   trainer.isBlock = action === "block";
-//   await trainer.save();
-
-//   res.status(200).json({
-//     success: true,
-//     message:
-//       action === "block"
-//         ? "Trainer blocked successfully."
-//         : "Trainer unblocked successfully.",
-//   });
-// });
-
-// const adminDeleteUser = catchAsyncError(async (req, res) => {
-//   // The adminAuthToken middleware ensures only admins can reach this point
-//   const { userId } = req.params;
-//   const { accountType } = req.body; // accountType should be 'trainer' or 'trainee'
-//   const model = accountType === "trainer" ? adminModel : traineeModel;
-//   // Use the common delete function
-//   const result = await deleteUser(userId, model);
-//   return res.status(result.status).json({ message: result.message });
-// });
-
 export {
   getPendingTrainers,
   getTrainerInfo,
@@ -246,8 +174,4 @@ export {
   ////////////////////////////////////////////////////////////////
   getTrainerDetails,
   getAllTrainersRequests,
-
-  // manageTrainerBlockStatus,
-  // manageTraineeBlockStatus,
-  // adminDeleteUser,
 };

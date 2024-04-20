@@ -14,7 +14,7 @@ async function handleQualificationImageUpload(trainer, file) {
     { user: { payload: trainer } },
     "photo"
   );
-  const existingImageHash = trainer.qualificationAndAchievementPhotoHash; // This field should exist in the trainer model
+  const existingImageHash = trainer.qualificationAndAchievementPhotoHash;
 
   const uploadResult = await uploadImageToCloudinary(
     file,
@@ -31,81 +31,6 @@ async function handleQualificationImageUpload(trainer, file) {
   throw new Error("Failed to upload image");
 }
 
-// const addQualificationAndAchievement = catchAsyncError(
-//   async (req, res, next) => {
-//     const trainerId = req.user.payload.id;
-//     const data = {
-//       trainer: trainerId,
-//     };
-//     console.log(req.file);
-//     if (req.file) {
-//       data.photo = req.file.path;
-//     } else {
-//       return next(
-//         new AppError(
-//           "Photo is required for qualifications and achievements",
-//           400
-//         )
-//       );
-//     }
-//     const newQualificationAndAchievement = new QualificationAndAchievementModel(
-//       data
-//     );
-//     await newQualificationAndAchievement.save();
-//     res.status(201).json({
-//       success: true,
-//       message: "Image saved successfully",
-//       data: newQualificationAndAchievement,
-//     });
-//   }
-// );
-
-// Retrieve a specific qualification or achievement
-
-// const addQualificationAndAchievement = catchAsyncError(
-//   async (req, res, next) => {
-//     const trainerId = req.user.payload.id;
-//     const trainer = await trainerModel.findById(trainerId);
-
-//     if (!trainer) {
-//       return next(new Error("Trainer not found"));
-//     }
-
-//     if (!req.file) {
-//       return next(
-//         new AppError(
-//           "Photo is required for qualifications and achievements",
-//           400
-//         )
-//       );
-//     }
-
-//     const imageUploadResult = await handleQualificationImageUpload(
-//       trainer,
-//       req.file
-//     );
-
-//     if (!imageUploadResult) {
-//       return next(new Error("Image upload failed"));
-//     }
-
-//     const data = {
-//       trainer: trainerId,
-//       ...imageUploadResult,
-//     };
-
-//     const newQualificationAndAchievement = new QualificationAndAchievementModel(
-//       data
-//     );
-//     await newQualificationAndAchievement.save();
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Image and data saved successfully",
-//       data: newQualificationAndAchievement,
-//     });
-//   }
-// );
 const addQualificationAndAchievement = catchAsyncError(
   async (req, res, next) => {
     const trainerId = req.user.payload.id;
@@ -132,7 +57,7 @@ const addQualificationAndAchievement = catchAsyncError(
     if (!imageUploadResult) {
       return next(new Error("Image upload failed"));
     }
-    // Check if a similar qualification already exists
+
     const existingQualification =
       await QualificationAndAchievementModel.findOne({
         trainer: trainerId,
@@ -234,7 +159,6 @@ const getTrainerQualificationsAndAchievements = catchAsyncError(
 //   }
 // );
 
-// Delete a qualification or achievement
 const deleteQualificationAndAchievement = catchAsyncError(
   async (req, res, next) => {
     const trainerId = req.user.payload.id;

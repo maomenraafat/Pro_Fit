@@ -4,7 +4,6 @@ import * as QualificationAndAchievement from "./QualificationAndAchievement.cont
 import { verifyToken, allowedTo } from "../../../middlewares/authToken.js";
 import { uploadqualification } from "../../../multer/multer.js";
 
-// Route to add a new qualification or achievement
 qualificationAndAchievementRoutes.post(
   "/",
   verifyToken,
@@ -13,7 +12,6 @@ qualificationAndAchievementRoutes.post(
   QualificationAndAchievement.addQualificationAndAchievement
 );
 
-// Route to get a specific qualification or achievement
 qualificationAndAchievementRoutes.get(
   "/:id",
   verifyToken,
@@ -21,7 +19,6 @@ qualificationAndAchievementRoutes.get(
   QualificationAndAchievement.getQualificationAndAchievement
 );
 
-// Route to get all qualifications and achievements for a trainer
 qualificationAndAchievementRoutes.get(
   "/",
   verifyToken,
@@ -37,7 +34,6 @@ qualificationAndAchievementRoutes.get(
 //   QualificationAndAchievement.updateQualificationAndAchievement
 // );
 
-// Route to delete a specific qualification or achievement
 qualificationAndAchievementRoutes.delete(
   "/:id",
   verifyToken,
