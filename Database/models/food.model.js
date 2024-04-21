@@ -83,7 +83,7 @@ const foodSchema = new Schema(
       required: false,
     },
     foodAllergens: {
-      type: [String],
+      type: String,
       enum: [
         "Milk",
         "Eggs",
@@ -113,7 +113,7 @@ const foodSchema = new Schema(
       ],
     },
     diseaseCompatibility: {
-      type: [String],
+      type: String,
       enum: [
         "Diabetes",
         "Hypertension",
@@ -136,7 +136,7 @@ const foodSchema = new Schema(
       ],
     },
     religionrestriction: {
-      type: [String],
+      type: String,
       enum: ["Alcohol", "Pork", "Carrion", "Beef", " Meat Products", "Chicken"],
     },
     Trainer: {
