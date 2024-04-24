@@ -1,0 +1,239 @@
+import { foodModel } from "../../../Database/models/food.model.js";
+import { mealModel } from "../../../Database/models/meal.model.js";
+import { AppError } from "../../utils/AppError.js";
+import { catchAsyncError } from "../../utils/catchAsyncError.js";
+
+async function calculateMealMacros(ingredients) {
+  let mealMacros = {
+    calories: 0,
+    proteins: 0,
+    fats: 0,
+    carbs: 0,
+  };
+
+  for (const ingredient of ingredients) {
+    const food = await foodModel.findById(ingredient.food).exec();
+
+    if (!food || !food.macros) {
+      throw new AppError("Food item not found or does not have macros", 404);
+    }
+
+    mealMacros.calories += (food.macros.calories || 0) * ingredient.amount;
+    mealMacros.proteins += (food.macros.proteins || 0) * ingredient.amount;
+    mealMacros.fats += (food.macros.fats || 0) * ingredient.amount;
+    mealMacros.carbs += (food.macros.carbs || 0) * ingredient.amount;
+  }
+
+  return mealMacros;
+}
+
+// const addMeal = catchAsyncError(async (req, res, next) => {
+//   const { mealname, ingredients, amount, mealnote, mealtype, mealmacros } =
+//     req.body;
+//   if (req.user.payload.role === "trainer") {
+//     var Trainer = req.user.payload.id;
+//   } else {
+//     var admin = req.user.payload.id;
+//   }
+//   //const mealmacros = await calculateMealMacros(ingredients);
+//   const data = new mealModel({
+//     mealname,
+//     mealnote,
+//     mealtype,
+//     ingredients,
+//     amount,
+//     mealmacros,
+//     // baseMacro,
+//     Trainer,
+//     admin,
+//   });
+
+//   await data.save();
+
+//   res.status(200).json({
+//     message: "success",
+//     data,
+//   });
+// });
+const addMeal = catchAsyncError(async (req, res, next) => {
+  const { mealname, ingredients, mealnote, mealtype, mealmacros } = req.body;
+  const formattedIngredients = ingredients.map((ingredient) => ({
+    food: ingredient.food,
+    amount: ingredient.amount || 1,
+    foodname: ingredient.foodname,
+    foodImage: ingredient.foodImage,
+    servingUnit: ingredient.servingUnit,
+    macros: ingredient.macros,
+  }));
+  const mealData = {
+    mealname,
+    mealnote,
+    mealtype,
+    ingredients: formattedIngredients,
+    mealmacros,
+  };
+  if (req.user.payload.role === "trainer") {
+    mealData.Trainer = req.user.payload.id;
+  } else {
+    mealData.admin = req.user.payload.id;
+  }
+
+  const data = new mealModel(mealData);
+
+  await data.save();
+
+  res.status(200).json({
+    message: "success",
+    message: "Meal Added successfully",
+    data,
+  });
+});
+
+// const updateMeal = catchAsyncError(async (req, res, next) => {
+//   const { id } = req.params;
+//   const { mealname, ingredients, amount, mealnote, mealtype, mealmacros } =
+//     req.body;
+
+//   let data = await mealModel.findByIdAndUpdate(
+//     id,
+//     { mealname, ingredients, amount, mealnote, mealtype, mealmacros },
+//     { new: true, runValidators: true }
+//   );
+//   if (!data) {
+//     return next(new AppError("Meal not found", 404));
+//   }
+//   // if (ingredients) {
+//   //   meal.mealmacros = await calculateMealMacros(ingredients);
+//   // }
+//   await data.save();
+//   res.status(200).json({
+//     message: "Meal updated successfully",
+//     data,
+//   });
+// });
+const updateMeal = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const { mealname, ingredients, mealnote, mealtype, mealmacros } = req.body;
+  const formattedIngredients = ingredients.map((ingredient) => ({
+    food: ingredient.food,
+    amount: ingredient.amount || 1,
+    foodname: ingredient.foodname,
+    foodImage: ingredient.foodImage,
+    servingUnit: ingredient.servingUnit,
+    macros: ingredient.macros,
+  }));
+  const updateData = {
+    mealname,
+    mealnote,
+    mealtype,
+    ingredients: formattedIngredients,
+    mealmacros,
+  };
+  if (req.user.payload.role === "trainer") {
+    updateData.Trainer = req.user.payload.id;
+  } else {
+    updateData.admin = req.user.payload.id;
+  }
+  let data = await mealModel.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+  if (!data) {
+    return next(new AppError("Meal not found", 404));
+  }
+  res.status(200).json({
+    message: "Meal updated successfully",
+    data,
+  });
+});
+
+const updateMealIngredients = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const { ingredientsUpdate } = req.body;
+  let meal = await mealModel.findById(id);
+  if (!meal) {
+    return next(new AppError("Meal not found", 404));
+  }
+  ingredientsUpdate.forEach((update) => {
+    const ingredientIndex = meal.ingredients.findIndex(
+      (ing) => ing.food.toString() === update.food
+    );
+    if (ingredientIndex !== -1) {
+      if (update.newFood) {
+        meal.ingredients[ingredientIndex].food = update.newFood;
+      }
+      if (update.amount !== undefined) {
+        meal.ingredients[ingredientIndex].amount = update.amount;
+      }
+      // } else {
+      //   // Add a new ingredient if it doesn't exist and newFood is specified
+      //   if (update.newFood && update.amount !== undefined) {
+      //     meal.ingredients.push({
+      //       food: update.newFood, // Use newFood as the food ID for the new ingredient
+      //       amount: update.amount,
+      //     });
+      //   } else if (update.food && update.amount !== undefined) {
+      //     // Or treat the 'food' field as a new ingredient if 'newFood' isn't specified but 'food' is.
+      //     meal.ingredients.push({
+      //       food: update.food,
+      //       amount: update.amount,
+      //     });
+      //   }
+      // }
+    }
+  });
+  meal.mealmacros = await calculateMealMacros(meal.ingredients);
+  await meal.save();
+  res.status(200).json({
+    message: "Meal updated successfully",
+    data: { meal },
+  });
+});
+
+const getMeal = catchAsyncError(async (req, res, next) => {
+  const data = await mealModel.find().populate({
+    path: "ingredients.food",
+    select: "foodImage foodname macros",
+  });
+  if (!data) {
+    return next(new AppError(" data not found", 404));
+  }
+  res.status(200).json({
+    message: "success",
+    data,
+  });
+});
+const getSpecificMeal = catchAsyncError(async (req, res, next) => {
+  const id = req.params.id;
+  const data = await mealModel.findById(id).populate({
+    path: "ingredients.food",
+    select: "foodImage foodname macros",
+  });
+  if (!data) {
+    return next(new AppError(" data not found", 404));
+  }
+  res.status(200).json({
+    message: "success",
+    data,
+  });
+});
+const deleteMeal = catchAsyncError(async (req, res, next) => {
+  const id = req.params.id;
+  const data = await mealModel.findByIdAndDelete(id);
+  if (!data) {
+    return next(new AppError(" data not found", 404));
+  }
+  res.status(200).json({
+    message: "success",
+    data,
+  });
+});
+
+export {
+  addMeal,
+  updateMeal,
+  getMeal,
+  getSpecificMeal,
+  deleteMeal,
+  updateMealIngredients,
+};

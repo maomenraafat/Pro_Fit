@@ -15,6 +15,7 @@ import trainerpackagesRoutes from "./src/modules/Trainer/Package/Package.routes.
 import qualificationAndAchievementRoutes from "./src/modules/Trainer/QualificationAndAchievement/QualificationAndAchievement.routes.js";
 import adminTrainerRouter from "./src/modules/Admin/trainer/trainer.routes.js";
 import FoodRouter from "./src/modules/Food/Food.routes.js";
+import MealRouter from "./src/modules/Meal/Meal.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -36,6 +37,7 @@ app.use("/api/v1/trainers/packages", trainerpackagesRoutes);
 app.use("/api/v1/trainers", trainerRouter);
 app.use("/api/v1/trainees/auth", tranieeAuthRouter);
 app.use("/api/v1/Food", FoodRouter);
+app.use("/api/v1/Meal", MealRouter);
 app.all("*", (req, res, next) => {
   next(new AppError("Endpoint was not found", 404));
 });
