@@ -57,9 +57,9 @@ const traineeSchema = new Schema(
     //-------------------------------------------------------------------------------------------------------------------------
     profilePhoto: {
       type: String,
-      default: "",
+      default: "https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5",
     },
-    mobile: {
+    phoneNumber: {
       type: String,
       trim: true,
     },
@@ -73,7 +73,7 @@ const traineeSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "trainee"],
+      // enum: ["admin", "trainee"],
       default: "trainee",
     },
     isBlock: {

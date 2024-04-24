@@ -3,23 +3,12 @@ const tranieeAuthRouter = Router();
 import * as auth from "./auth.controller.js";
 import { allowedTo, verifyToken } from "../../../middlewares/authToken.js";
 
-tranieeAuthRouter.post("/SignUp", auth.tranieeSignUp);
-tranieeAuthRouter.post("/verifyOTP", auth.verifyTraineeOTP); //it takes 10 min to expire
-tranieeAuthRouter.post("/resendOTP", auth.resendOTP);
-tranieeAuthRouter.post("/forgetPassword", auth.forgetPassword);
-tranieeAuthRouter.post("/resetPassword", auth.resetPassword);
-tranieeAuthRouter.post("/SignIn", auth.traineeSignIn);
-tranieeAuthRouter.post(
-  "/changePassword",
-  verifyToken,
-  allowedTo("trainee"),
-  auth.changePassword
-);
-tranieeAuthRouter.delete(
-  "/deleteAccount",
-  verifyToken,
-  allowedTo("trainee"),
-  auth.deleteAccount
-);
+tranieeAuthRouter.post("/signup", auth.tranieeSignUp);
+tranieeAuthRouter.post("/verify-otp", auth.verifyTraineeOTP); //it takes 10 min to expire
+tranieeAuthRouter.post("/resend-otp", auth.resendOTP);
+tranieeAuthRouter.post("/basic-info",verifyToken,allowedTo("trainee"),auth.basicInformation);
+tranieeAuthRouter.post("/forget-password", auth.forgetPassword);
+tranieeAuthRouter.post("/reset-password", auth.resetPassword);
+tranieeAuthRouter.post("/signin", auth.traineeSignIn);
 
 export default tranieeAuthRouter;
