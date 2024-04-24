@@ -3,7 +3,7 @@ import { generateToken } from "../../../middlewares/authToken.js";
 import { AppError } from "../../../utils/AppError.js";
 import { generateRandomOTP } from "../../../utils/OTPGenerator.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
-import { traineeModel } from "../../../../Database/models/trainee.model.js";
+import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 import bcrypt from "bcrypt";
 import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
 
