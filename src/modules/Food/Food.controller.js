@@ -3,12 +3,10 @@ import { catchAsyncError } from "../../utils/catchAsyncError.js";
 import { foodModel } from "../../../Database/models/food.model.js";
 import { determineFolderName } from "../../multer/multer.js";
 import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
+import { ApiFeatures } from "../../utils/ApiFeatures.js";
 
 async function handleFoodImageUpload(user, file) {
-  // Determine folder name based on user context, not specifically a trainer
   const folderName = determineFolderName({ user }, "foodImage");
-
-  // Upload the image to Cloudinary
   const uploadResult = await uploadImageToCloudinary(file, folderName);
   if (uploadResult) {
     return {
@@ -21,7 +19,6 @@ async function handleFoodImageUpload(user, file) {
 const addFood = catchAsyncError(async (req, res, next) => {
   const {
     foodname,
-    quantity,
     baseMacro,
     servingUnit,
     category,
@@ -45,7 +42,7 @@ const addFood = catchAsyncError(async (req, res, next) => {
   if (req.file) {
     const uploadResult = await handleFoodImageUpload(req.user, req.file);
     if (uploadResult) {
-      foodImage = uploadResult.photoUrl; // Store the URL returned from Cloudinary
+      foodImage = uploadResult.photoUrl;
     } else {
       return next(new Error("Failed to upload image"));
     }
@@ -61,7 +58,6 @@ const addFood = catchAsyncError(async (req, res, next) => {
   const data = new foodModel({
     foodname,
     foodImage,
-    quantity,
     macros,
     baseMacro,
     servingUnit,
@@ -113,24 +109,41 @@ const updateFood = catchAsyncError(async (req, res, next) => {
 });
 const getTrainerFood = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  const data = await foodModel.find({ Trainer: id });
+  let apiFeatures = new ApiFeatures(foodModel.find({ Trainer: id }), req.query)
+    .paginate()
+    .fields()
+    .filter()
+    .sort()
+    .search();
+  let data = await apiFeatures.mongoooseQuery;
   if (!data) {
     return next(new AppError(" data not found", 404));
   }
   res.status(200).json({
     success: true,
     message: "success",
+    page: apiFeatures.PAGE_NUMBER,
     data,
   });
 });
 const getFood = catchAsyncError(async (req, res, next) => {
-  const data = await foodModel.find({ Trainer: null });
+  let apiFeatures = new ApiFeatures(
+    foodModel.find({ Trainer: null }),
+    req.query
+  )
+    .paginate()
+    .fields()
+    .filter()
+    .sort()
+    .search();
+  let data = await apiFeatures.mongoooseQuery;
   if (!data) {
     return next(new AppError(" data not found", 404));
   }
   res.status(200).json({
     success: true,
     message: "success",
+    page: apiFeatures.PAGE_NUMBER,
     data,
   });
 });
