@@ -23,11 +23,17 @@ const traineeBasicInfoSchema = new Schema({
       },
       fitnessGoals:{
         type:String,
-        enum:['Lose Weight','Build Muscle','Healthy Lifestyle'],
       },
       activityLevel:{
         type:String,
-        enum:['Extremely Active','Very Active','Moderate Active','Lightly Active',"In active"]
+      },
+      religion: {
+        type: String,
+        trim: true,
+      },
+      nationality:{
+        type:String,
+        trim:true
       },
 },{
     timestamps:true

@@ -113,4 +113,14 @@ traineeSchema.pre("save", async function (next) {
   }
 });
 
+
+traineeSchema.pre('save', async function (next) {
+  // Check if the profile photo was modified and it's not the default photo
+  if (this.isModified('profilePhoto') && this.profilePhoto !== 'https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5') {
+
+  }
+
+  next();
+});
+
 export const traineeModel = model("Trainee", traineeSchema);

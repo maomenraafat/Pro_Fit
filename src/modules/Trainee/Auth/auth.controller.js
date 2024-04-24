@@ -5,6 +5,7 @@ import { generateRandomOTP } from "../../../utils/OTPGenerator.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
 import { traineeModel } from "../../../../Database/models/trainee.model.js";
 import bcrypt from "bcrypt";
+import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
 
 const tranieeSignUp = catchAsyncError(async (req, res, next) => {
   const { firstName, lastName, email, password, phoneNumber } = req.body;
@@ -32,8 +33,10 @@ const tranieeSignUp = catchAsyncError(async (req, res, next) => {
       lastName: newTrainee.lastName,
       OTP,
     },
+    null,
     req.protocol,
     req.headers.host,
+    null,
     "confirmEmail"
   );
   console.log(sentEmail);
@@ -137,8 +140,10 @@ const resendOTP = catchAsyncError(async (req, res, next) => {
       lastName: trainee.lastName,
       OTP: newOTP,
     },
+    null,
     req.protocol,
     req.headers.host,
+    null,
     "confirmEmail"
   );
 
@@ -185,13 +190,11 @@ const basicInformation = catchAsyncError(async (req, res, next) => {
   // Log the saved trainee data for debugging (optional)
   console.log("Saved trainee data:", tranieeData);
 
-  res
-    .status(200)
-    .json({
-      success: true,
-      message: "Basic information saved successfully.",
-      data: tranieeData,
-    });
+  res.status(200).json({
+    success: true,
+    message: "Basic information saved successfully.",
+    data: tranieeData,
+  });
 });
 
 const forgetPassword = catchAsyncError(async (req, res, next) => {
@@ -222,8 +225,10 @@ const forgetPassword = catchAsyncError(async (req, res, next) => {
       lastName: user.lastName,
       OTP, // OTP serves as the token for resetting the password
     },
+    null,
     req.protocol,
     req.headers.host,
+    null,
     "resetPassword"
   );
 
@@ -279,8 +284,7 @@ const traineeSignIn = catchAsyncError(async (req, res, next) => {
   if (!trainee) {
     return next(new AppError("Incorrect email or password", 401));
   }
-  console.log(password);
-  console.log(trainee.password);
+
   // Check if the password is correct
   const isMatch = await bcrypt.compare(password, trainee.password);
 
@@ -294,17 +298,8 @@ const traineeSignIn = catchAsyncError(async (req, res, next) => {
   }
 
   // Generate a token for the trainee
-  //   const token = generateToken(
-  //     {
-  //       id: trainee._id,
-  //       email: trainee.email,
-  //       name: trainee.firstName,
-  //       role: trainee.role,
-  //     },
-  //     process.env.JWT_SECRET,
-  //     { expiresIn: "24h" }
-  //   );
   const token = generateToken(trainee);
+
   // Send the token to the trainee
   res.status(200).json({
     success: true,
@@ -312,7 +307,6 @@ const traineeSignIn = catchAsyncError(async (req, res, next) => {
     token,
   });
 });
-
 
 export {
   tranieeSignUp,
