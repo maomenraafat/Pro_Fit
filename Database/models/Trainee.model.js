@@ -59,6 +59,10 @@ const traineeSchema = new Schema(
       type: String,
       default: "https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5",
     },
+    profilePhotoId: {
+      type: String,
+      default: '', 
+    },
     phoneNumber: {
       type: String,
       trim: true,
