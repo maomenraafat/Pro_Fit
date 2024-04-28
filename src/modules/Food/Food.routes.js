@@ -18,12 +18,23 @@ FoodRouter.patch(
   uploadFoodImage(),
   Food.updateFood
 );
-FoodRouter.get("/", verifyToken, allowedTo("trainer", "admin"), Food.getFood);
+FoodRouter.get(
+  "/",
+  verifyToken,
+  allowedTo("trainer", "admin"),
+  Food.getProfitFoods
+);
 FoodRouter.get(
   "/TrainerFood",
   verifyToken,
   allowedTo("trainer"),
   Food.getTrainerFood
+);
+FoodRouter.get(
+  "/AllFoods",
+  verifyToken,
+  allowedTo("trainer"),
+  Food.getAllFoods
 );
 FoodRouter.get(
   "/:id",

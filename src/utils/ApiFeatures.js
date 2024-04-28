@@ -1,46 +1,105 @@
 export class ApiFeatures {
-  constructor(mongoooseQuery, queryString) {
-    this.mongoooseQuery = mongoooseQuery;
+  constructor(mongooseQuery, queryString) {
+    this.mongooseQuery = mongooseQuery;
     this.queryString = queryString;
   }
 
+  // paginate() {
+  //   const PAGE_LIMIT = this.queryString.limit * 1 || 5;
+  //   let PAGE_NUMBER = this.queryString.page * 1 || 1;
+  //   if (this.queryString.page <= 0) PAGE_NUMBER = 1;
+  //   const SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT;
+  //   this.PAGE_NUMBER = PAGE_NUMBER;
+  //   this.mongooseQuery.skip(SKIP).limit(PAGE_LIMIT);
+  //   return this;
+  // }
   paginate() {
-    const PAGE_LIMIT = 5;
-    let PAGE_NUMBER = this.queryString.page * 1 || 1;
-    if (this.queryString.page <= 0) PAGE_NUMBER = 1;
-    const SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT;
-    this.PAGE_NUMBER = PAGE_NUMBER;
-    this.mongoooseQuery.skip(SKIP).limit(PAGE_LIMIT);
+    const page = parseInt(this.queryString.page, 10) || 1;
+    const limit = parseInt(this.queryString.limit, 10) || 5;
+    const skip = (page - 1) * limit;
+
+    this.page = page;
+    this.limit = limit;
+    this.skip = skip;
+    this.mongooseQuery = this.mongooseQuery.skip(skip).limit(limit);
+
     return this;
   }
 
+  // filter() {
+  //   let filterObject = { ...this.queryString };
+  //   let excludedQuery = ["page", "sort", "fields", "keywords"];
+  //   excludedQuery.forEach((q) => {
+  //     delete filterObject[q];
+  //   });
+  //   filterObject = JSON.stringify(filterObject);
+  //   filterObject = filterObject.replace(
+  //     /\b(gt|gte|lt|lte)\b/g,
+  //     (match) => `$${match}`
+  //   );
+  //   filterObject = JSON.parse(filterObject);
+  //   this.mongooseQuery.find(filterObject);
+  //   return this;
+  // }
+  // filter() {
+  //   const queryObj = { ...this.queryString }; // Make a copy of the query string
+  //   const excludeFields = ["page", "sort", "limit", "fields", "keywords"];
+  //   excludeFields.forEach((el) => delete queryObj[el]); // Remove fields not meant for filtering
+
+  //   // Advanced filtering with lt, lte, gt, gte, and string matching
+  //   let queryStr = JSON.stringify(queryObj);
+  //   queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+
+  //   const filters = JSON.parse(queryStr);
+
+  //   // Apply string filters using regex for partial, case-insensitive matching
+  //   Object.keys(filters).forEach((key) => {
+  //     if (typeof filters[key] === "string" && !filters[key].startsWith("$")) {
+  //       filters[key] = { $regex: filters[key], $options: "i" }; // Case-insensitive partial match
+  //     }
+  //   });
+
+  //   this.mongooseQuery = this.mongooseQuery.find(filters);
+  //   return this;
+  // }
   filter() {
-    let filterObject = { ...this.queryString };
-    let excludedQuery = ["page", "sort", "fields", "keywords"];
-    excludedQuery.forEach((q) => {
-      delete filterObject[q];
+    const queryObj = { ...this.queryString }; // Make a copy of the query string
+    const excludeFields = ["page", "sort", "limit", "fields", "keywords"];
+    excludeFields.forEach((el) => delete queryObj[el]); // Remove fields not meant for filtering
+
+    // Advanced filtering with lt, lte, gt, gte, and string matching
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+
+    const filters = JSON.parse(queryStr);
+
+    // Apply string filters using regex for partial, case-insensitive matching
+    Object.keys(filters).forEach((key) => {
+      if (typeof filters[key] === "string" && !filters[key].startsWith("$")) {
+        filters[key] = { $regex: filters[key], $options: "i" }; // Case-insensitive partial match
+      }
     });
-    filterObject = JSON.stringify(filterObject);
-    filterObject = filterObject.replace(
-      /\b(gt|gte|lt|lte)\b/g,
-      (match) => `$${match}`
-    );
-    filterObject = JSON.parse(filterObject);
-    this.mongoooseQuery.find(filterObject);
+
+    // Include the initial query conditions (like $or logic for Trainer) into the filtering
+    this.mongooseQuery = this.mongooseQuery.find({
+      ...filters,
+      ...this.initialQuery,
+    });
+
     return this;
   }
 
   sort() {
     if (this.queryString.sort) {
       let sortedBy = this.queryString.sort.split(",").join(" ");
-      this.mongoooseQuery.sort(sortedBy);
+      this.mongooseQuery.sort(sortedBy);
     }
     return this;
   }
 
   search() {
     if (this.queryString.keywords) {
-      this.mongoooseQuery.find({
+      this.mongooseQuery.find({
         $or: [
           { title: { $regex: this.queryString.keywords, $options: "i" } },
           { descripiton: { $regex: this.queryString.keywords, $options: "i" } },
@@ -52,7 +111,7 @@ export class ApiFeatures {
   fields() {
     if (this.queryString.fields) {
       let fields = this.queryString.fields.split(",").join(" ");
-      this.mongoooseQuery.select(fields);
+      this.mongooseQuery.select(fields);
     }
     return this;
   }

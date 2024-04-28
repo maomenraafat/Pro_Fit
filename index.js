@@ -17,6 +17,7 @@ import adminTrainerRouter from "./src/modules/Admin/trainer/trainer.routes.js";
 import FoodRouter from "./src/modules/Food/Food.routes.js";
 import MealRouter from "./src/modules/Meal/Meal.routes.js";
 import tranieeProfileRouter from "./src/modules/Trainee/Profile/profile.routes.js";
+//import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -42,6 +43,7 @@ app.use("/api/v1/trainees/profile", tranieeProfileRouter);
 
 app.use("/api/v1/Food", FoodRouter);
 app.use("/api/v1/Meal", MealRouter);
+//app.use("/api/v1/Nutrition", NutritionRouter);
 app.all("*", (req, res, next) => {
   next(new AppError("Endpoint was not found", 404));
 });

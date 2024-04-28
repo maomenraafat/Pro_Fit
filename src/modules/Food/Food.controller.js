@@ -81,7 +81,6 @@ const addFood = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
-
 const updateFood = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   let data = await foodModel.findByIdAndUpdate(id, req.body, {
@@ -110,40 +109,99 @@ const updateFood = catchAsyncError(async (req, res, next) => {
 const getTrainerFood = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
   let apiFeatures = new ApiFeatures(foodModel.find({ Trainer: id }), req.query)
-    .paginate()
-    .fields()
+    .search()
     .filter()
     .sort()
-    .search();
-  let data = await apiFeatures.mongoooseQuery;
-  if (!data) {
-    return next(new AppError(" data not found", 404));
+    .paginate()
+    .fields();
+  let query = apiFeatures.mongooseQuery;
+  let data = await query;
+  let totalCount = await foodModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  if (!data || data.length === 0) {
+    return next(new AppError("No data found", 404));
   }
+
   res.status(200).json({
     success: true,
-    message: "success",
-    page: apiFeatures.PAGE_NUMBER,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    Page: apiFeatures.page,
+    limit: apiFeatures.limit,
     data,
   });
 });
-const getFood = catchAsyncError(async (req, res, next) => {
+const getProfitFoods = catchAsyncError(async (req, res, next) => {
   let apiFeatures = new ApiFeatures(
     foodModel.find({ Trainer: null }),
     req.query
   )
-    .paginate()
-    .fields()
+    .search()
     .filter()
     .sort()
-    .search();
-  let data = await apiFeatures.mongoooseQuery;
-  if (!data) {
-    return next(new AppError(" data not found", 404));
+    .paginate()
+    .fields();
+
+  let query = apiFeatures.mongooseQuery;
+  let data = await query;
+
+  let totalCount = await foodModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  if (!data || data.length === 0) {
+    return next(new AppError("No data found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    Page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    data,
+  });
+});
+const getAllFoods = catchAsyncError(async (req, res, next) => {
+  const id = req.user.payload.id;
+  let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  // if (req.query.allFood) {
+  //   query.$or = [{ Trainer: id }, { Trainer: null }];
+  // } else if (req.query.trainerFood) {
+  //   query.Trainer = id;
+  // } else if (req.query.profitFood) {
+  //   query.Trainer = null;
+  // }
+
+  let apiFeatures = new ApiFeatures(foodModel.find(query), req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  let data = await apiFeatures.mongooseQuery;
+
+  let totalCount = await foodModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+  if (data.length === 0) {
+    return next(new AppError("Data not found", 404));
   }
   res.status(200).json({
     success: true,
-    message: "success",
-    page: apiFeatures.PAGE_NUMBER,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
     data,
   });
 });
@@ -176,7 +234,8 @@ export {
   addFood,
   updateFood,
   getTrainerFood,
-  getFood,
+  getProfitFoods,
+  getAllFoods,
   getSpecificFood,
   deleteFood,
 };

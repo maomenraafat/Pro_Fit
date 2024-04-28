@@ -1,5 +1,6 @@
 import { foodModel } from "../../../Database/models/food.model.js";
 import { mealModel } from "../../../Database/models/meal.model.js";
+import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import { AppError } from "../../utils/AppError.js";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
 
@@ -26,7 +27,6 @@ async function calculateMealMacros(ingredients) {
 
   return mealMacros;
 }
-
 // const addMeal = catchAsyncError(async (req, res, next) => {
 //   const { mealname, ingredients, amount, mealnote, mealtype, mealmacros } =
 //     req.body;
@@ -88,7 +88,6 @@ const addMeal = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
-
 // const updateMeal = catchAsyncError(async (req, res, next) => {
 //   const { id } = req.params;
 //   const { mealname, ingredients, amount, mealnote, mealtype, mealmacros } =
@@ -146,7 +145,6 @@ const updateMeal = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
-
 const updateMealIngredients = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const { ingredientsUpdate } = req.body;
@@ -189,17 +187,205 @@ const updateMealIngredients = catchAsyncError(async (req, res, next) => {
     data: { meal },
   });
 });
+// const getTrainerMeals = catchAsyncError(async (req, res, next) => {
+//   const id = req.user.payload.id; // Adjust based on your user authentication system
+//   let apiFeatures = new ApiFeatures(mealModel.find({ Trainer: id }), req.query)
+//     .paginate()
+//     .fields()
+//     .filter()
+//     .sort()
+//     .search();
+//   apiFeatures.mongooseQuery = apiFeatures.mongooseQuery.populate({
+//     path: "ingredients.food",
+//     select: "foodImage foodName macros",
+//   });
+//   let data = await apiFeatures.mongooseQuery;
+//   let totalCount = await mealModel.countDocuments({ Trainer: id });
+//   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
-const getMeal = catchAsyncError(async (req, res, next) => {
-  const data = await mealModel.find().populate({
-    path: "ingredients.food",
-    select: "foodImage foodname macros",
-  });
-  if (!data) {
-    return next(new AppError(" data not found", 404));
+//   if (!data) {
+//     return next(new AppError("No data found for this trainer", 404));
+//   }
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Success",
+//     totalDocuments: totalCount,
+//     totalPages: totalPages,
+//     Page: apiFeatures.page,
+//     limit: apiFeatures.limit,
+//     data,
+//   });
+// });
+const getTrainerMeals = catchAsyncError(async (req, res, next) => {
+  const id = req.user.payload.id;
+  let apiFeatures = new ApiFeatures(mealModel.find({ Trainer: id }), req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  let query = apiFeatures.mongooseQuery;
+  // .populate({
+  //   path: "ingredients.food",
+  //   select: "",
+  // });
+
+  let data = await query;
+  let totalCount = await mealModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  if (data.length === 0) {
+    return next(new AppError("No data found for this trainer", 404));
   }
+
   res.status(200).json({
-    message: "success",
+    success: true,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    Page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    data,
+  });
+});
+// const getProfitMeals = catchAsyncError(async (req, res, next) => {
+//   let apiFeatures = new ApiFeatures(
+//     mealModel.find({ Trainer: null }),
+//     req.query
+//   )
+//     .paginate()
+//     .fields()
+//     .filter()
+//     .sort()
+//     .search();
+//   apiFeatures.mongooseQuery = apiFeatures.mongooseQuery.populate({
+//     path: "ingredients.food",
+//     select: "foodImage foodName macros",
+//   });
+//   let data = await apiFeatures.mongooseQuery;
+//   let totalCount = await mealModel.countDocuments({ Trainer: null });
+//   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+//   if (!data) {
+//     return next(new AppError("No data found", 404));
+//   }
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Success",
+//     totalDocuments: totalCount,
+//     totalPages: totalPages,
+//     Page: apiFeatures.page,
+//     limit: apiFeatures.limit,
+//     data,
+//   });
+// });
+const getProfitMeals = catchAsyncError(async (req, res, next) => {
+  let apiFeatures = new ApiFeatures(
+    mealModel.find({ Trainer: null }),
+    req.query
+  )
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  let query = apiFeatures.mongooseQuery;
+  // .populate({
+  //   path: "ingredients.food",
+  //   select: "",
+  // });
+
+  let data = await query;
+  let totalCount = await mealModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  if (data.length === 0) {
+    return next(new AppError("No data found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    Page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    data,
+  });
+});
+// const getAllMeals = catchAsyncError(async (req, res, next) => {
+//   let apiFeatures = new ApiFeatures(mealModel.find(), req.query)
+//     .paginate()
+//     .fields()
+//     .filter()
+//     .sort()
+//     .search();
+
+//   apiFeatures.mongooseQuery = apiFeatures.mongooseQuery.populate({
+//     path: "ingredients.food",
+//     select: "",
+//   });
+
+//   let data = await apiFeatures.mongooseQuery;
+//   let totalCount = await mealModel.countDocuments();
+//   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+//   if (data.length === 0) {
+//     return next(new AppError("No data found", 404));
+//   }
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Success",
+//     totalDocuments: totalCount,
+//     totalPages: totalPages,
+//     Page: apiFeatures.page,
+//     limit: apiFeatures.limit,
+//     data,
+//   });
+// });
+const getAllMeals = catchAsyncError(async (req, res, next) => {
+  const id = req.user.payload.id;
+  let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  let apiFeatures = new ApiFeatures(mealModel.find(query), req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+  //let query = apiFeatures.mongooseQuery;
+  // .populate({
+  //   path: "ingredients.food",
+  //   select: "",
+  // });
+
+  let data = await apiFeatures.mongooseQuery;
+
+  let totalCount = await mealModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  if (data.length === 0) {
+    return next(new AppError("No data found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    Page: apiFeatures.page,
+    limit: apiFeatures.limit,
     data,
   });
 });
@@ -232,7 +418,9 @@ const deleteMeal = catchAsyncError(async (req, res, next) => {
 export {
   addMeal,
   updateMeal,
-  getMeal,
+  getTrainerMeals,
+  getProfitMeals,
+  getAllMeals,
   getSpecificMeal,
   deleteMeal,
   updateMealIngredients,
