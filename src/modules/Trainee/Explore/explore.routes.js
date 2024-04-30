@@ -8,7 +8,6 @@ traineeExploreRouter.get("/trainers/:trainerId/about", explore.getTrainerAbout);
 traineeExploreRouter.get("/trainers/:trainerId/transformations", explore.getClientTransformations);
 
 traineeExploreRouter.post('/trainers/:trainerId/toggle-favorite', verifyToken, allowedTo("trainee"), explore.toggleFavorite);
-
 traineeExploreRouter.get("/favorites",verifyToken,allowedTo("trainee"),explore.getAllFavorites);
 
 export default traineeExploreRouter;
