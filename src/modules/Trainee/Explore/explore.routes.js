@@ -3,13 +3,12 @@ const traineeExploreRouter = Router();
 import * as explore from "./explore.controller.js";
 import { allowedTo, verifyToken } from "../../../middlewares/authToken.js";
 
-traineeExploreRouter.get("/trainers", explore.getAllTrainers);
-traineeExploreRouter.get("/trainers/:trainerId", explore.getTrainerDetails);
+traineeExploreRouter.get("/trainers", verifyToken,allowedTo("trainee"),explore.getAllTrainers);
+traineeExploreRouter.get("/trainers/:trainerId/about", explore.getTrainerAbout);
+traineeExploreRouter.get("/trainers/:trainerId/transformations", explore.getClientTransformations);
 
-traineeExploreRouter.get("/trainers/:trainerId/favorite",explore.getTrainerDetails);
+traineeExploreRouter.post('/trainers/:trainerId/toggle-favorite', verifyToken, allowedTo("trainee"), explore.toggleFavorite);
 
-traineeExploreRouter.post("/trainers/:trainerId/favorite",verifyToken,allowedTo("trainee"),explore.addFavorite);
-traineeExploreRouter.delete("/trainers/:trainerId/favorite",verifyToken,allowedTo("trainee"),explore.removeFavorite);
 traineeExploreRouter.get("/favorites",verifyToken,allowedTo("trainee"),explore.getAllFavorites);
 
 export default traineeExploreRouter;

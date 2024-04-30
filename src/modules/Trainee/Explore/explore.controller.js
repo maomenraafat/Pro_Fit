@@ -1,22 +1,21 @@
 import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
-import { PackageModel } from "../../../../Database/models/Package.model.js";
 import { trainerModel } from "../../../../Database/models/Trainer.model.js";
 import { ClientTransformationModel } from "../../../../Database/models/clientTransformations.js";
 import { favouriteModel } from "../../../../Database/models/favouriteSchema.model.js";
+import mongoose from "mongoose";
 
 const getAllTrainers = catchAsyncError(async (req, res, next) => {
-  const sortDirection = req.query.sort === "desc" ? -1 : 1; // Read sort direction from query parameter
-  const specializationFilter = req.query.specialization; // Read specialization filter from query parameter
+  const traineeId = req.user.payload.id;
+  const sortDirection = req.query.sort === "desc" ? -1 : 1;
+  const specializationFilter = req.query.specialization;
 
   let matchStage = {};
   if (specializationFilter) {
-    matchStage = {
-      "specializations.label": specializationFilter,
-    };
+    matchStage["specializations.value"] = specializationFilter;
   }
 
-  const trainersWithLowestPackagePrice = await trainerModel.aggregate([
+  const trainers = await trainerModel.aggregate([
     { $match: matchStage },
     {
       $lookup: {
@@ -31,53 +30,62 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
       },
     },
     {
-      $addFields: {
-        fullName: { $concat: ["$firstName", " ", "$lastName"] },
-        lowestPrice: { $arrayElemAt: ["$lowestPackage.price", 0] },
+      $lookup: {
+        from: "favorites",
+        let: { trainerId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$trainer", "$$trainerId"] },
+                  { $eq: ["$trainee", new mongoose.Types.ObjectId(traineeId)] },
+                ],
+              },
+            },
+          },
+        ],
+        as: "favoriteStatus",
       },
     },
     {
-      $sort: { lowestPrice: sortDirection },
+      $addFields: {
+        fullName: { $concat: ["$firstName", " ", "$lastName"] },
+        lowestPrice: { $arrayElemAt: ["$lowestPackage.price", 0] },
+        specializations: "$specializations.label",
+        isFavorite: { $anyElementTrue: ["$favoriteStatus"] },
+      },
     },
     {
       $project: {
         fullName: 1,
-        specializations: {
-          $map: {
-            input: "$specializations",
-            as: "spec",
-            in: "$$spec.label",
-          },
-        },
+        specializations: 1,
         yearsOfExperience: 1,
         lowestPrice: 1,
+        isFavorite: 1,
       },
     },
+    { $sort: { lowestPrice: sortDirection } },
   ]);
 
   res.status(200).json({
     success: true,
-    data: trainersWithLowestPackagePrice,
+    data: trainers,
   });
 });
 
-const getTrainerDetails = catchAsyncError(async (req, res, next) => {
-  const { trainerId } = req.params; // Assuming the ID is passed as a URL parameter
+const getTrainerAbout = catchAsyncError(async (req, res, next) => {
+  const { trainerId } = req.params;
 
   // Check if the trainer exists and populate the qualificationsAndAchievements
   const trainer = await trainerModel.findById(trainerId).populate({
     path: "qualificationsAndAchievements",
-    select: "photo -_id", // Fetching only the photo field, excluding MongoDB's _id
+    select: "photo -_id",
   });
 
   if (!trainer) {
     return next(new AppError("No trainer found with that ID", 404));
   }
-
-  // Fetch client transformations related to this trainer
-  const clientTransformations = await ClientTransformationModel.find({
-    trainerId: trainer._id,
-  }).select("title description beforeImage afterImage");
 
   // Calculating age from birthDate
   const birthDate = new Date(trainer.birthDate);
@@ -97,80 +105,49 @@ const getTrainerDetails = catchAsyncError(async (req, res, next) => {
   // Build response object with customized trainer details
   const trainerDetails = {
     _id: trainer._id,
-    fullName: `${trainer.firstName} ${trainer.lastName}`, // Combine first name and last name
-    location: `${trainer.city}, ${trainer.country}`, // Combine city and country
-    age: `${age} Years Old`, // Provide age in "Years Old"
-    specializations: trainer.specializations.map((spec) => spec.label), // Provide array of labels only
+    fullName: `${trainer.firstName} ${trainer.lastName}`,
+    location: `${trainer.city}, ${trainer.country}`,
+    age: `${age} Years Old`,
+    specializations: trainer.specializations.map((spec) => spec.label),
     email: trainer.email,
     gender: trainer.gender,
     subscribers: trainer.subscribers,
     qualificationsAndAchievements: trainer.qualificationsAndAchievements.map(
       (qa) => qa.photo
-    ), // Array of photo URLs
-    createdAt: monthYear, // Formatted creation date
+    ),
+    createdAt: monthYear,
     biography: trainer.biography,
     phoneNumber: trainer.phoneNumber,
     profilePhoto: trainer.profilePhoto,
     yearsOfExperience: trainer.yearsOfExperience,
-    clientTransformations: clientTransformations.map((ct) => ({
-      title: ct.title,
-      description: ct.description,
-      beforeImage: ct.beforeImage,
-      afterImage: ct.afterImage,
-    })), // Include client transformations
   };
 
-  // Sending response
   res.status(200).json({
     success: true,
     data: trainerDetails,
   });
 });
 
-const addFavorite = catchAsyncError(async (req, res, next) => {
+const getClientTransformations = catchAsyncError(async (req, res, next) => {
   const { trainerId } = req.params;
-  const traineeId = req.user.payload.id;
 
-  const existiingFavorite = await favouriteModel.findOne({
-    trainee: traineeId,
-    trainer: trainerId,
-  });
+  // Fetch client transformations related to this trainer
+  const transformations = await ClientTransformationModel.find({
+    trainerId: trainerId,
+  }).select("title description beforeImage afterImage -_id");
 
-  if (existiingFavorite) {
-    return next(
-      new AppError("This trainer is already in your favorites list", 400)
-    );
+  // If no transformations are found, return a message
+  if (!transformations.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No transformations found for this trainer.",
+    });
   }
 
-  // Add to favorites if not already there
-  const favorite = await favouriteModel.create({
-    trainee: traineeId,
-    trainer: trainerId,
-  });
-
-  res.status(201).json({
-    success: true,
-    data: favorite,
-  });
-});
-
-const removeFavorite = catchAsyncError(async (req, res, next) => {
-  const { trainerId } = req.params;
-  const traineeId = req.user.payload.id;
-
-  const favorite = await favouriteModel.findOneAndDelete({
-    trainee: traineeId,
-    trainer: trainerId,
-  });
-
-  if (!favorite) {
-    return next(new AppError("No favorite found with that ID", 404));
-  }
-
-  // If you want to return a 200 OK status instead of 204 No Content:
+  // Sending the transformations in response
   res.status(200).json({
     success: true,
-    message: "Favorite successfully removed.",
+    data: transformations,
   });
 });
 
@@ -185,7 +162,16 @@ const getAllFavorites = catchAsyncError(async (req, res, next) => {
   // Extract just the trainer IDs from the favorites
   const trainerIds = favoriteTrainerIds.map((favorite) => favorite.trainer);
 
-  // Now, use these IDs to get the trainers' details similar to getAllTrainers
+  // Check if there are no favorites and return an appropriate message
+  if (trainerIds.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: "No favorite trainers found.",
+      data: [],
+    });
+  }
+
+  // If there are favorite trainers, retrieve their details
   const trainersDetails = await trainerModel.aggregate([
     { $match: { _id: { $in: trainerIds } } },
     {
@@ -203,6 +189,7 @@ const getAllFavorites = catchAsyncError(async (req, res, next) => {
     {
       $addFields: {
         fullName: { $concat: ["$firstName", " ", "$lastName"] },
+        lowestPrice: { $arrayElemAt: ["$lowestPackage.price", 0] },
       },
     },
     {
@@ -216,21 +203,52 @@ const getAllFavorites = catchAsyncError(async (req, res, next) => {
           },
         },
         yearsOfExperience: 1,
-        lowestPrice: { $arrayElemAt: ["$lowestPackage.price", 0] },
+        lowestPrice: 1,
       },
     },
   ]);
 
+  // Send the response with the details of favorite trainers
   res.status(200).json({
     success: true,
     data: trainersDetails,
   });
 });
 
+const toggleFavorite = catchAsyncError(async (req, res) => {
+  const traineeId = req.user.payload.id;
+  const { trainerId } = req.params;
+
+  // Attempt to find an existing favorite
+  const isExist = await favouriteModel.findOne({
+    trainee: traineeId,
+    trainer: trainerId,
+  });
+  // If it exists, remove it
+  if (isExist) {
+    await favouriteModel.findByIdAndDelete(isExist._id);
+    return res.status(200).json({
+      success: true,
+      message: "Favorite removed successfully.",
+      isFavorite: false,
+    });
+  }
+  // If it does not exist, add it
+  await favouriteModel.create({
+    trainee: traineeId,
+    trainer: trainerId,
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: "Favorite added successfully.",
+    isFavorite: true,
+  });
+});
 export {
   getAllTrainers,
-  getTrainerDetails,
-  addFavorite,
-  removeFavorite,
+  getTrainerAbout,
+  getClientTransformations,
+  toggleFavorite,
   getAllFavorites,
 };

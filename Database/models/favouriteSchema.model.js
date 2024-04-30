@@ -15,4 +15,4 @@ const favoriteSchema = new Schema({
     timestamps:true
 })
 
-export const favouriteModel = model('favouriteSchema',favoriteSchema)
+export const favouriteModel = model('Favorite',favoriteSchema)

@@ -196,6 +196,8 @@ const trainerSchema = new Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true }, 
+    toObject: { virtuals: true }
   }
 );
 
@@ -221,4 +223,13 @@ const trainerSchema = new Schema(
 //   }
 // });
 
+
+// Virtual field to indicate if the trainer is a favorite
+trainerSchema.virtual('isFavorite', {
+  ref: 'Favorite', 
+  localField: '_id',
+  foreignField: 'trainer',
+  justOne: false, // Set to false because one trainer can be favorited by many trainees
+  count: true // Only get the number of documents that match
+});
 export const trainerModel = model("Trainer", trainerSchema);

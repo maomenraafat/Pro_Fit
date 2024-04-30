@@ -18,6 +18,7 @@ import FoodRouter from "./src/modules/Food/Food.routes.js";
 import MealRouter from "./src/modules/Meal/Meal.routes.js";
 import tranieeProfileRouter from "./src/modules/Trainee/Profile/profile.routes.js";
 import traineeExploreRouter from "./src/modules/Trainee/Explore/explore.routes.js";
+import traineeReviewRouter from "./src/modules/Trainee/Review/review.routes.js";
 //import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
 const app = express();
 const port = 4000;
@@ -41,7 +42,8 @@ app.use("/api/v1/trainers", trainerRouter);
 
 app.use("/api/v1/trainees/auth", tranieeAuthRouter);
 app.use("/api/v1/trainees/profile", tranieeProfileRouter);
-app.use("/api/v1/trainees/explore", traineeExploreRouter);
+app.use("/api/v1/trainees", traineeExploreRouter);
+app.use("/api/v1/trainees", traineeReviewRouter);
 
 app.use("/api/v1/Food", FoodRouter);
 app.use("/api/v1/Meal", MealRouter);
