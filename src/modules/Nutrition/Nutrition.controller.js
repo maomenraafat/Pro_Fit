@@ -1,11 +1,9 @@
-import { foodModel } from "../../../Database/models/food.model.js";
-import { mealModel } from "../../../Database/models/meal.model.js";
 import { nutritionModel } from "../../../Database/models/nutrition.model.js";
 import { AppError } from "../../utils/AppError.js";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
 
 const addNutritionPlan = catchAsyncError(async (req, res, next) => {
-  const trainer = req.user.payload.id; // Assuming 'trainer' is the logged-in user's ID
+  const trainer = req.user.payload.id;
   const { planName, description, days, plantype, daymacros, planmacros } =
     req.body;
 

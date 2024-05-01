@@ -158,7 +158,7 @@ const nutritionSchema = new Schema(
                 mealnote: {
                   type: String,
                 },
-                ingredients: [
+                foods: [
                   {
                     food: { type: Schema.ObjectId, ref: "food" },
                     amount: {
