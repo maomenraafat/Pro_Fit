@@ -170,24 +170,22 @@ const getProfitFoods = catchAsyncError(async (req, res, next) => {
 });
 const getAllFoods = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  let query = { $or: [{ Trainer: id }, { Trainer: null }] };
-  // if (req.query.allFood) {
-  //   query.$or = [{ Trainer: id }, { Trainer: null }];
-  // } else if (req.query.trainerFood) {
-  //   query.Trainer = id;
-  // } else if (req.query.profitFood) {
-  //   query.Trainer = null;
-  // }
-
+  //let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  let query = {};
+  if ("allFoods" in req.query) {
+    query.$or = [{ Trainer: id }, { Trainer: null }];
+  } else if ("trainerFoods" in req.query) {
+    query.Trainer = id;
+  } else if ("profitFoods" in req.query) {
+    query.Trainer = null;
+  }
   let apiFeatures = new ApiFeatures(foodModel.find(query), req.query)
     .search()
     .filter()
     .sort()
     .paginate()
     .fields();
-
   let data = await apiFeatures.mongooseQuery;
-
   let totalCount = await foodModel
     .find(apiFeatures.mongooseQuery.getQuery())
     .countDocuments();

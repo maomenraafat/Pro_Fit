@@ -64,7 +64,19 @@ export class ApiFeatures {
   // }
   filter() {
     const queryObj = { ...this.queryString }; // Make a copy of the query string
-    const excludeFields = ["page", "sort", "limit", "fields", "keywords"];
+    const excludeFields = [
+      "page",
+      "sort",
+      "limit",
+      "fields",
+      "keywords",
+      "profitFoods",
+      "allFoods",
+      "trainerFoods",
+      "profitMeals",
+      "allMeals",
+      "trainerMeals",
+    ];
     excludeFields.forEach((el) => delete queryObj[el]); // Remove fields not meant for filtering
 
     // Advanced filtering with lt, lte, gt, gte, and string matching
@@ -101,8 +113,8 @@ export class ApiFeatures {
     if (this.queryString.keywords) {
       this.mongooseQuery.find({
         $or: [
-          { title: { $regex: this.queryString.keywords, $options: "i" } },
-          { descripiton: { $regex: this.queryString.keywords, $options: "i" } },
+          { foodname: { $regex: this.queryString.keywords, $options: "i" } },
+          { category: { $regex: this.queryString.keywords, $options: "i" } },
         ],
       });
     }

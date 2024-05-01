@@ -222,3 +222,9 @@ const nutritionSchema = new Schema(
 );
 
 export const nutritionModel = model("nutrition", nutritionSchema);
+
+// numberofdays: {
+//   type: Number,
+//   min: 1,
+//   required: false,
+// },

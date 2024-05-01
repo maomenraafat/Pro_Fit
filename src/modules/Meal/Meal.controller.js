@@ -354,7 +354,16 @@ const getProfitMeals = catchAsyncError(async (req, res, next) => {
 // });
 const getAllMeals = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  //let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  let query = {};
+  if (req.query.allMeals) {
+    query.$or = [{ Trainer: id }, { Trainer: null }];
+  } else if (req.query.trainerMeals) {
+    query.Trainer = id;
+  } else if (req.query.profitMeals) {
+    query.Trainer = null;
+  }
+
   let apiFeatures = new ApiFeatures(mealModel.find(query), req.query)
     .search()
     .filter()
