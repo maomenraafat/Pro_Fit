@@ -18,8 +18,8 @@ import FoodRouter from "./src/modules/Food/Food.routes.js";
 import MealRouter from "./src/modules/Meal/Meal.routes.js";
 import tranieeProfileRouter from "./src/modules/Trainee/Profile/profile.routes.js";
 import traineeExploreRouter from "./src/modules/Trainee/Explore/explore.routes.js";
-import traineeReviewRouter from "./src/modules/Trainee/Review/review.routes.js";
-//import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
+//import SubscriptionRouter from "./src/modules/subscription/subscription.routes.js";
+import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -39,20 +39,21 @@ app.use(
 );
 app.use("/api/v1/trainers/packages", trainerpackagesRoutes);
 app.use("/api/v1/trainers", trainerRouter);
-
 app.use("/api/v1/trainees/auth", tranieeAuthRouter);
 app.use("/api/v1/trainees/profile", tranieeProfileRouter);
-app.use("/api/v1/trainees", traineeExploreRouter);
-app.use("/api/v1/trainees", traineeReviewRouter);
+app.use("/api/v1/trainees/explore", traineeExploreRouter);
+//app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 
 app.use("/api/v1/Food", FoodRouter);
 app.use("/api/v1/Meal", MealRouter);
-//app.use("/api/v1/Nutrition", NutritionRouter);
+app.use("/api/v1/Nutrition", NutritionRouter);
 app.all("*", (req, res, next) => {
   next(new AppError("Endpoint was not found", 404));
 });
 
 app.use(globalErrorHandling);
+console.log(`Memory Usage: ${process.memoryUsage().heapUsed / 1024 / 1024} MB`);
 
 dbConnection();
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+//node --max-old-space-size=4096 index.js  # Increase to 4 GB, adjust as necessary

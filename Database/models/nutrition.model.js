@@ -16,41 +16,41 @@ const nutritionSchema = new Schema(
       ref: "Trainee",
       required: false,
     },
-    numberofdays: {
-      type: Number,
-      min: 1,
-      required: false,
-    },
-    description: {
+    ///////////////////////
+    gender: {
       type: String,
-      required: false,
+      enum: ["Male", "Female"],
+      default: "Male",
     },
-    numberofmeals: {
+    birthDate: {
+      type: Date,
+    },
+    weight: {
       type: Number,
-      min: 1,
-      required: false,
     },
-    goal: {
+    height: {
+      type: Number,
+    },
+    fitnessGoals: {
       type: String,
-      required: false,
+      enum: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
     },
-    dietType: {
+    activityLevel: {
       type: String,
       enum: [
-        "Vegetarian",
-        "Vegan",
-        "Ketogenic",
-        "Paleo",
-        "Mediterranean",
-        "Standard",
-        "Other",
+        "Extremely Active",
+        "Very Active",
+        "Moderate Active",
+        "Lightly Active",
+        "In active",
       ],
-      required: false,
     },
-    religionrestriction: {
-      type: [String],
-      enum: ["alcohol", "pork", "carrion", "Beef", " meat products"],
-    },
+    ////////////////////////////////
+    // numberofdays: {
+    //   type: Number,
+    //   min: 1,
+    //   required: false,
+    // },
     foodAllergens: {
       type: [String],
       enum: [
@@ -102,68 +102,83 @@ const nutritionSchema = new Schema(
         "Thyroid Disorders",
       ],
     },
+    religionrestriction: {
+      type: [String],
+      enum: ["alcohol", "pork", "carrion", "Beef", " meat products"],
+    },
+    dietType: {
+      type: String,
+      enum: [
+        "Vegetarian",
+        "Vegan",
+        "Ketogenic",
+        "Paleo",
+        "Mediterranean",
+        "Standard",
+        "Other",
+      ],
+      required: false,
+    },
+    numberofmeals: {
+      type: Number,
+      min: 1,
+      required: false,
+    },
+    goal: {
+      type: String,
+      required: false,
+    },
     duration: {
       type: Number,
-      required: true,
+      required: false,
     },
-    week: [
+    description: {
+      type: String,
+      required: false,
+    },
+    days: [
       {
-        dayNumber: [
+        day: {
+          type: String,
+          required: false,
+        },
+        meals: [
           {
-            type: Number,
-            required: false,
-            meals: [
+            meal: [
               {
-                meal: [
+                mealname: {
+                  type: String,
+                  required: [true, "Meal Name is required"],
+                },
+                mealtype: {
+                  type: String,
+                  enum: ["Breakfast", "Lunch", "Snack", "Dinner"],
+                  required: false,
+                },
+                mealnote: {
+                  type: String,
+                },
+                ingredients: [
                   {
-                    mealname: {
-                      type: String,
-                      required: [true, "Meal Name is required"],
+                    food: { type: Schema.ObjectId, ref: "food" },
+                    amount: {
+                      type: Number,
+                      default: 1,
                     },
-                    mealtype: {
+                    foodname: {
                       type: String,
-                      enum: ["Breackfast", "Lunch", "Snack", "Dinner"],
-                      required: false,
+                      required: [true, "Food Name is required"],
                     },
-                    mealnote: {
+                    foodImage: {
                       type: String,
+                      required: [true, "Food Image is required"],
                     },
-                    ingredients: [
-                      {
-                        food: { type: Schema.ObjectId, ref: "food" },
-                        amount: {
-                          type: Number,
-                          default: 1,
-                        },
-                        foodname: {
-                          type: String,
-                          required: [true, "Food Name is required"],
-                        },
-                        foodImage: {
-                          type: String,
-                          required: [true, "Food Image is required"],
-                        },
-                        servingUnit: {
-                          type: String,
-                          enum: [
-                            "Gram",
-                            "Scoop",
-                            "Piece",
-                            "Mili",
-                            "Spoon",
-                            "Cup",
-                          ],
-                          default: "Gram",
-                        },
-                        macros: {
-                          calories: { type: Number, min: 0 },
-                          proteins: { type: Number, min: 0 },
-                          fats: { type: Number, min: 0 },
-                          carbs: { type: Number, min: 0 },
-                        },
-                      },
-                    ],
-                    mealmacros: {
+                    servingUnit: {
+                      type: String,
+                      enum: ["Gram", "Scoop", "Piece", "Mili", "Spoon", "Cup"],
+                      default: "Gram",
+                    },
+                    macros: {
                       calories: { type: Number, min: 0 },
                       proteins: { type: Number, min: 0 },
                       fats: { type: Number, min: 0 },
@@ -171,10 +186,22 @@ const nutritionSchema = new Schema(
                     },
                   },
                 ],
+                mealmacros: {
+                  calories: { type: Number, min: 0 },
+                  proteins: { type: Number, min: 0 },
+                  fats: { type: Number, min: 0 },
+                  carbs: { type: Number, min: 0 },
+                },
               },
             ],
           },
         ],
+        daymacros: {
+          calories: { type: Number, default: 0 },
+          proteins: { type: Number, default: 0 },
+          fats: { type: Number, default: 0 },
+          carbs: { type: Number, default: 0 },
+        },
       },
     ],
     planmacros: {
