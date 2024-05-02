@@ -20,7 +20,7 @@ import tranieeProfileRouter from "./src/modules/Trainee/Profile/profile.routes.j
 import traineeExploreRouter from "./src/modules/Trainee/Explore/explore.routes.js";
 //import SubscriptionRouter from "./src/modules/subscription/subscription.routes.js";
 import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
-import traineeReviewRouter from './src/modules/Trainee/Review/review.routes';
+import traineeReviewRouter from './src/modules/Trainee/Review/review.routes.js';
 const app = express();
 const port = 4000;
 app.use(cors());
