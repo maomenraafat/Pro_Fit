@@ -147,13 +147,11 @@ const deleteReview = catchAsyncError(async (req, res) => {
 
   //Check if review was not found
   if (!isExist) {
-    return res
-      .status(404)
-      .json({
-        success: false,
-        message:
-          "Review not found or you do not have permission to delete this review.",
-      });
+    return res.status(404).json({
+      success: false,
+      message:
+        "Review not found or you do not have permission to delete this review.",
+    });
   }
 
   res

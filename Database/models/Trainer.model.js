@@ -198,6 +198,7 @@ const trainerSchema = new Schema(
     timestamps: true,
     toJSON: { virtuals: true }, 
     toObject: { virtuals: true }
+    
   }
 );
 
@@ -233,3 +234,4 @@ trainerSchema.virtual('isFavorite', {
   count: true // Only get the number of documents that match
 });
 export const trainerModel = model("Trainer", trainerSchema);
+

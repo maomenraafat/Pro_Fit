@@ -22,12 +22,17 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
         from: "packages",
         let: { trainerId: "$_id" },
         pipeline: [
-          { $match: { $expr: { $eq: ["$trainerId", "$$trainerId"] }, active: true } }, // Filter by active packages
+          {
+            $match: {
+              $expr: { $eq: ["$trainerId", "$$trainerId"] },
+              active: true,
+            },
+          }, // Filter by active packages
           { $sort: { price: 1 } },
-          { $limit: 1 }
+          { $limit: 1 },
         ],
-        as: "lowestPackage"
-      }
+        as: "lowestPackage",
+      },
     },
     {
       $lookup: {
@@ -39,27 +44,29 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
               $expr: {
                 $and: [
                   { $eq: ["$trainer", "$$trainerId"] },
-                  { $eq: ["$trainee", new mongoose.Types.ObjectId(traineeId)] }
-                ]
-              }
-            }
-          }
+                  { $eq: ["$trainee", new mongoose.Types.ObjectId(traineeId)] },
+                ],
+              },
+            },
+          },
         ],
-        as: "favoriteStatus"
-      }
+        as: "favoriteStatus",
+      },
     },
     {
       $lookup: {
         from: "reviews",
         localField: "_id",
         foreignField: "trainer",
-        as: "reviews"
-      }
+        as: "reviews",
+      },
     },
     {
       $addFields: {
         fullName: { $concat: ["$firstName", " ", "$lastName"] },
-        lowestPrice: { $ifNull: [{ $arrayElemAt: ["$lowestPackage.price", 0] }, 0] }, // Default lowestPrice to 0 if no packages
+        lowestPrice: {
+          $ifNull: [{ $arrayElemAt: ["$lowestPackage.price", 0] }, 0],
+        }, // Default lowestPrice to 0 if no packages
         specializations: "$specializations.label",
         isFavorite: { $anyElementTrue: ["$favoriteStatus"] },
         averageRating: { $ifNull: [{ $avg: "$reviews.rating" }, 0] },
@@ -67,10 +74,10 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
           $cond: {
             if: { $gt: ["$yearsOfExperience", 0] },
             then: { $concat: [{ $toString: "$yearsOfExperience" }, " Years"] },
-            else: "0 Years"
-          }
-        }
-      }
+            else: "0 Years",
+          },
+        },
+      },
     },
     {
       $project: {
@@ -80,15 +87,15 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
         lowestPrice: 1,
         isFavorite: 1,
         averageRating: 1,
-        subscribers: 1
-      }
+        subscribers: 1,
+      },
     },
-    { $sort: { lowestPrice: sortDirection } }
+    { $sort: { lowestPrice: sortDirection } },
   ]);
 
   res.status(200).json({
     success: true,
-    data: trainers
+    data: trainers,
   });
 });
 
@@ -121,7 +128,10 @@ const getTrainerAbout = catchAsyncError(async (req, res, next) => {
   });
 
   // Ensure years of experience is at least 0 and append "Years"
-  const yearsOfExperienceText = `${Math.max(0, trainer.yearsOfExperience || 0)} Years`;
+  const yearsOfExperienceText = `${Math.max(
+    0,
+    trainer.yearsOfExperience || 0
+  )} Years`;
 
   // Build response object with customized trainer details
   const trainerDetails = {
