@@ -21,6 +21,7 @@ import traineeExploreRouter from "./src/modules/Trainee/Explore/explore.routes.j
 //import SubscriptionRouter from "./src/modules/subscription/subscription.routes.js";
 import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
 import traineeReviewRouter from './src/modules/Trainee/Review/review.routes.js';
+import tranieeheartRate from "./src/modules/Trainee/Home/Heart Rate/heartRate.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -44,6 +45,7 @@ app.use("/api/v1/trainees/auth", tranieeAuthRouter);
 app.use("/api/v1/trainees/profile", tranieeProfileRouter);
 app.use("/api/v1/trainees", traineeExploreRouter);
 app.use("/api/v1/trainees", traineeReviewRouter);
+app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
 //app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 
 app.use("/api/v1/Food", FoodRouter);
