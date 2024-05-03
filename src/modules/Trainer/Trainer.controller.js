@@ -4,6 +4,7 @@ import { AppError } from "../../utils/AppError.js";
 import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
 import { determineFolderName } from "../../multer/multer.js";
 import fs from "fs";
+import { SubscriptionModel } from "../../../Database/models/subscription.model.js";
 
 async function validateAndUpdateTrainer(id, statusUpdate, acceptPolicy) {
   const data = await trainerModel.findById(id);
@@ -186,18 +187,39 @@ const submitionrequests = catchAsyncError(async (req, res, next) => {
     });
   }
 });
+// const getTrainerData = catchAsyncError(async (req, res, next) => {
+//   const id = req.user.payload.id;
+//   const trainer = await trainerModel
+//     .findById(id)
+//     .populate("qualificationsAndAchievements");
+//   if (!trainer) {
+//     return next(new AppError("Trainer data not found", 404));
+//   }
+//   const activeSubscribersCount = await SubscriptionModel.countDocuments({
+//     trainerId: trainer._id,
+//     status: "Active",
+//   });
+//   const trainerData = trainer.toObject();
+//   trainerData.activeSubscribers = activeSubscribersCount;
+//   console.log("Active subscribers:", trainerData.activeSubscribers);
 
+//   res.status(201).json({
+//     success: true,
+//     data: trainerData,
+//   });
+// });
 const getTrainerData = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  console.log(id);
-  const data = await trainerModel
-    .findById({
-      _id: id,
-    })
+  const trainer = await trainerModel
+    .findById(id)
     .populate("qualificationsAndAchievements");
-  if (!data) {
-    return next(new AppError("data not found", 404));
+  if (!trainer) {
+    return next(new AppError("Trainer data not found", 404));
   }
+  const activeSubscribersCount = await trainer.fetchActiveSubscribers();
+  const data = trainer.toObject();
+  data.activeSubscribers = activeSubscribersCount;
+
   res.status(201).json({
     success: true,
     data,

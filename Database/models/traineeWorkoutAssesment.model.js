@@ -51,6 +51,11 @@ const traineeWorkoutAssesmentSchema = new Schema(
       enum: ["Home", "Gym", "Outdoor", "Mixed"],
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["Current", "Archived"],
+      default: "Current",
+    },
   },
   {
     timestamps: true,

@@ -88,6 +88,11 @@ const dietAssesmentSchema = new Schema(
       fats: { type: Number, min: 0 },
       carbs: { type: Number, min: 0 },
     },
+    status: {
+      type: String,
+      enum: ["Current", "Archived"],
+      default: "Current",
+    },
     documents: [
       {
         title: String,

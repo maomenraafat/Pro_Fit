@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { SubscriptionModel } from "../models/subscription.model.js";
 
 const trainerSchema = new Schema(
   {
@@ -155,10 +156,10 @@ const trainerSchema = new Schema(
         ref: "Trainee",
       },
     ],
-    subscribers: {
-      type: Number,
-      default: 0,
-    },
+    // subscribers: {
+    //   type: Number,
+    //   default: 0,
+    // },
     //--------------------------------------------------------------------------
     status: {
       type: String,
@@ -196,9 +197,8 @@ const trainerSchema = new Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true }, 
-    toObject: { virtuals: true }
-    
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
@@ -224,14 +224,52 @@ const trainerSchema = new Schema(
 //   }
 // });
 
-
 // Virtual field to indicate if the trainer is a favorite
-trainerSchema.virtual('isFavorite', {
-  ref: 'Favorite', 
-  localField: '_id',
-  foreignField: 'trainer',
+trainerSchema.virtual("isFavorite", {
+  ref: "Favorite",
+  localField: "_id",
+  foreignField: "trainer",
   justOne: false, // Set to false because one trainer can be favorited by many trainees
-  count: true // Only get the number of documents that match
+  count: true, // Only get the number of documents that match
 });
-export const trainerModel = model("Trainer", trainerSchema);
 
+// trainerSchema.virtual("activeSubscribers").get(function () {
+//   if (!this._id) return 0; // Ensure there's an ID to query against
+
+//   return SubscriptionModel.countDocuments({
+//     trainerId: this._id,
+//     status: "Active",
+//   }).exec();
+// });
+
+// trainerSchema.set("toJSON", { virtuals: true });
+// trainerSchema.set("toObject", { virtuals: true });
+
+// trainerSchema.methods.fetchActiveSubscribers = async function () {
+//   if (!this._id) return 0;
+//   return await SubscriptionModel.countDocuments({
+//     trainerId: this._id,
+//     status: "Active",
+//   });
+// };
+trainerSchema.methods.fetchActiveSubscribers = async function () {
+  if (!this._id) return 0;
+  const results = await SubscriptionModel.aggregate([
+    {
+      $match: {
+        trainerId: this._id,
+        status: "Active",
+      },
+    },
+    {
+      $group: {
+        _id: "$traineeId",
+      },
+    },
+    {
+      $count: "distinctTrainees",
+    },
+  ]);
+  return results.length > 0 ? results[0].distinctTrainees : 0;
+};
+export const trainerModel = model("Trainer", trainerSchema);

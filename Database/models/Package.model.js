@@ -74,5 +74,15 @@ const packageSchema = new Schema({
     default: true,
   },
 });
+packageSchema.methods.countActiveSubscriptions = async function () {
+  const count = await mongoose
+    .model("Subscription")
+    .countDocuments({
+      package: this._id,
+      status: "Active",
+    })
+    .exec();
+  return count;
+};
 
 export const PackageModel = model("Package", packageSchema);
