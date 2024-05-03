@@ -18,9 +18,9 @@ import FoodRouter from "./src/modules/Food/Food.routes.js";
 import MealRouter from "./src/modules/Meal/Meal.routes.js";
 import tranieeProfileRouter from "./src/modules/Trainee/Profile/profile.routes.js";
 import traineeExploreRouter from "./src/modules/Trainee/Explore/explore.routes.js";
-//import SubscriptionRouter from "./src/modules/subscription/subscription.routes.js";
+import SubscriptionRouter from "./src/modules/subscription/subscription.routes.js";
 import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
-import traineeReviewRouter from './src/modules/Trainee/Review/review.routes.js';
+import traineeReviewRouter from "./src/modules/Trainee/Review/review.routes.js";
 import tranieeheartRate from "./src/modules/Trainee/Home/Heart Rate/heartRate.routes.js";
 const app = express();
 const port = 4000;
@@ -46,7 +46,7 @@ app.use("/api/v1/trainees/profile", tranieeProfileRouter);
 app.use("/api/v1/trainees", traineeExploreRouter);
 app.use("/api/v1/trainees", traineeReviewRouter);
 app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
-//app.use("/api/v1/trainees/subscription", SubscriptionRouter);
+app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 
 app.use("/api/v1/Food", FoodRouter);
 app.use("/api/v1/Meal", MealRouter);
@@ -56,7 +56,7 @@ app.all("*", (req, res, next) => {
 });
 
 app.use(globalErrorHandling);
-console.log(`Memory Usage: ${process.memoryUsage().heapUsed / 1024 / 1024} MB`);
+//console.log(`Memory Usage: ${process.memoryUsage().heapUsed / 1024 / 1024} MB`);
 
 dbConnection();
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));

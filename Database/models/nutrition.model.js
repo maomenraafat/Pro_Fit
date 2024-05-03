@@ -20,7 +20,7 @@ const nutritionSchema = new Schema(
     gender: {
       type: String,
       enum: ["Male", "Female"],
-      default: "Male",
+      // default: "Male",
     },
     birthDate: {
       type: Date,

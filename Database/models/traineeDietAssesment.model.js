@@ -14,11 +14,41 @@ const dietAssesmentSchema = new Schema(
       ref: "Trainer",
       required: true,
     },
+    ///////////////////////
+    gender: {
+      type: String,
+      enum: ["Male", "Female"],
+      default: "Male",
+    },
+    birthDate: {
+      type: Date,
+    },
+    weight: {
+      type: Number,
+    },
+    height: {
+      type: Number,
+    },
+    fitnessGoals: {
+      type: String,
+      enum: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
+    },
+    activityLevel: {
+      type: String,
+      enum: [
+        "Extremely Active",
+        "Very Active",
+        "Moderate Active",
+        "Lightly Active",
+        "In active",
+      ],
+    },
+    ////////////////////////////////
     foodAllergens: {
       type: [String],
       default: [],
     },
-    medicalConditions: {
+    desease: {
       type: [String],
       default: [],
     },
@@ -52,36 +82,6 @@ const dietAssesmentSchema = new Schema(
       hipCircumference: Number,
       thighCircumference: Number,
     },
-    ///////////////////////
-    gender: {
-      type: String,
-      enum: ["Male", "Female"],
-      default: "Male",
-    },
-    birthDate: {
-      type: Date,
-    },
-    weight: {
-      type: Number,
-    },
-    height: {
-      type: Number,
-    },
-    fitnessGoals: {
-      type: String,
-      enum: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
-    },
-    activityLevel: {
-      type: String,
-      enum: [
-        "Extremely Active",
-        "Very Active",
-        "Moderate Active",
-        "Lightly Active",
-        "In active",
-      ],
-    },
-    ////////////////////////////////
     macros: {
       calories: { type: Number, min: 0 },
       proteins: { type: Number, min: 0 },
