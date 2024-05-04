@@ -88,6 +88,7 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
         isFavorite: 1,
         averageRating: 1,
         subscribers: 1,
+        profilePhoto: 1
       },
     },
     { $sort: { lowestPrice: sortDirection } },
