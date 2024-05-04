@@ -57,11 +57,12 @@ const traineeSchema = new Schema(
     //-------------------------------------------------------------------------------------------------------------------------
     profilePhoto: {
       type: String,
-      default: "https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5",
+      default:
+        "https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5",
     },
     profilePhotoId: {
       type: String,
-      default: '', 
+      default: "",
     },
     phoneNumber: {
       type: String,
@@ -79,6 +80,11 @@ const traineeSchema = new Schema(
       type: String,
       // enum: ["admin", "trainee"],
       default: "trainee",
+    },
+    status: {
+      type: String,
+      enum: ["non-subscriber", "subscriber", "banned", "blocked"],
+      default: "non-subscriber",
     },
     isBlock: {
       type: Boolean,
@@ -117,11 +123,13 @@ traineeSchema.pre("save", async function (next) {
   }
 });
 
-
-traineeSchema.pre('save', async function (next) {
+traineeSchema.pre("save", async function (next) {
   // Check if the profile photo was modified and it's not the default photo
-  if (this.isModified('profilePhoto') && this.profilePhoto !== 'https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5') {
-
+  if (
+    this.isModified("profilePhoto") &&
+    this.profilePhoto !==
+      "https://asset.cloudinary.com/dbpvx37nc/fa534bec3c11074c407903bcaabffad5"
+  ) {
   }
 
   next();

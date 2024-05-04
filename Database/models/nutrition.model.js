@@ -46,11 +46,11 @@ const nutritionSchema = new Schema(
       ],
     },
     ////////////////////////////////
-    // numberofdays: {
-    //   type: Number,
-    //   min: 1,
-    //   required: false,
-    // },
+    daysCount: {
+      type: Number,
+      min: 1,
+      required: false,
+    },
     foodAllergens: {
       type: [String],
       enum: [

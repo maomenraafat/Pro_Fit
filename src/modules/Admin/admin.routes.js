@@ -19,4 +19,10 @@ adminRouter.get(
   allowedTo("admin"),
   admin.getAdminInfo
 );
+adminRouter.get(
+  "/SystemUsers",
+  verifyToken,
+  allowedTo("admin"),
+  admin.getSystemUsers
+);
 export default adminRouter;

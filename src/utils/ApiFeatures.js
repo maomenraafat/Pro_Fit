@@ -76,6 +76,7 @@ export class ApiFeatures {
       "profitMeals",
       "allMeals",
       "trainerMeals",
+      "users",
     ];
     excludeFields.forEach((el) => delete queryObj[el]); // Remove fields not meant for filtering
 

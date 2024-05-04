@@ -35,6 +35,7 @@ const trainerSchema = new Schema(
     profilePhotoHash: {
       type: String,
       default: "",
+      select: false,
     },
     nationalId: {
       type: Number,
@@ -156,10 +157,22 @@ const trainerSchema = new Schema(
         ref: "Trainee",
       },
     ],
-    // subscribers: {
-    //   type: Number,
-    //   default: 0,
-    // },
+    subscriptions: {
+      type: Number,
+      default: 0,
+      required: false,
+    },
+    paidAmount: {
+      type: Number,
+      default: 0,
+      required: false,
+    },
+
+    activeSubscribers: {
+      type: Number,
+      default: 0,
+      required: false,
+    },
     //--------------------------------------------------------------------------
     status: {
       type: String,
@@ -270,6 +283,37 @@ trainerSchema.methods.fetchActiveSubscribers = async function () {
       $count: "distinctTrainees",
     },
   ]);
+  this.activeSubscribers = results;
   return results.length > 0 ? results[0].distinctTrainees : 0;
 };
+trainerSchema.methods.updateSubscriptions = async function () {
+  const count = await SubscriptionModel.countDocuments({
+    trainerId: this._id,
+  });
+  this.subscriptions = count;
+  return this.save();
+};
+
+trainerSchema.methods.calculateTotalPaidAmount = async function () {
+  if (!this._id) return 0; // Guard clause if the trainer's ID isn't available
+  const result = await SubscriptionModel.aggregate([
+    {
+      $match: {
+        trainerId: this._id, // Filter subscriptions by this trainer's ID
+        status: "Active", // Consider only active subscriptions
+      },
+    },
+    {
+      $group: {
+        _id: null, // Grouping key is null because we want to aggregate all
+        totalPaidAmount: { $sum: "$paidAmount" }, // Sum up all the paid amounts
+      },
+    },
+  ]);
+
+  // If the aggregation returns a result, return the total paid amount, otherwise return 0
+  this.paidAmount = result;
+  return result.length > 0 ? result[0].totalPaidAmount : 0;
+};
+
 export const trainerModel = model("Trainer", trainerSchema);
