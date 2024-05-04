@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import express from "express";
 import { dbConnection } from "./Database/dbConnection.js";
+import './src/utils/scheduledTasks.js';
 import { globalErrorHandling } from "./src/middlewares/GlobalErrorHandling.js";
 import { AppError } from "./src/utils/AppError.js";
 import adminRouter from "./src/modules/Admin/admin.routes.js";
@@ -22,6 +23,7 @@ import traineeExploreRouter from "./src/modules/Trainee/Explore/explore.routes.j
 import NutritionRouter from "./src/modules/Nutrition/Nutrition.routes.js";
 import traineeReviewRouter from './src/modules/Trainee/Review/review.routes.js';
 import tranieeheartRate from "./src/modules/Trainee/Home/Heart Rate/heartRate.routes.js";
+import tranieeRecordSteps from "./src/modules/Trainee/Home/Record Steps/recordSteps.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -46,6 +48,7 @@ app.use("/api/v1/trainees/profile", tranieeProfileRouter);
 app.use("/api/v1/trainees", traineeExploreRouter);
 app.use("/api/v1/trainees", traineeReviewRouter);
 app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
+app.use("/api/v1/trainees/steps",tranieeRecordSteps);
 //app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 
 app.use("/api/v1/Food", FoodRouter);
