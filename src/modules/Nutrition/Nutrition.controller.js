@@ -4,8 +4,15 @@ import { catchAsyncError } from "../../utils/catchAsyncError.js";
 
 const addNutritionPlan = catchAsyncError(async (req, res, next) => {
   const trainer = req.user.payload.id;
-  const { planName, description, days, plantype, daymacros, planmacros } =
-    req.body;
+  const {
+    planName,
+    description,
+    days,
+    plantype,
+    daymacros,
+    planmacros,
+    daysCount,
+  } = req.body;
 
   const data = new nutritionModel({
     planName,
@@ -15,6 +22,7 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     plantype,
     daymacros,
     planmacros,
+    daysCount,
   });
 
   await data.save();
@@ -47,7 +55,9 @@ const updateNutritionPlan = catchAsyncError(async (req, res, next) => {
 const getNutritionPlans = catchAsyncError(async (req, res, next) => {
   const data = await nutritionModel
     .find()
-    .select("planName description days plantype daymacros planmacros");
+    .select(
+      "planName description days plantype daymacros planmacros daysCount"
+    );
 
   res.status(200).json({
     status: "success",
@@ -59,7 +69,9 @@ const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await nutritionModel
     .findById(id)
-    .select("planName description days plantype daymacros planmacros");
+    .select(
+      "planName description days plantype daymacros planmacros daysCount"
+    );
   if (!data) {
     return next(new AppError("No nutrition plan found with that ID", 404));
   }
