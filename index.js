@@ -5,7 +5,7 @@ import { dbConnection } from "./Database/dbConnection.js";
 import { globalErrorHandling } from "./src/middlewares/GlobalErrorHandling.js";
 import { AppError } from "./src/utils/AppError.js";
 import adminRouter from "./src/modules/Admin/admin.routes.js";
-import trainerRouter from "./src/modules/Trainer/Trainer.routes.js";
+import trainerRouter from "./src/modules/Trainer/Portfolio/Trainer.routes.js";
 import tranieeAuthRouter from "./src/modules/Trainee/Auth/auth.routes.js";
 import cors from "cors";
 import trainerAuthRoutes from "./src/modules/Trainer/Auth/auth.routes.js";

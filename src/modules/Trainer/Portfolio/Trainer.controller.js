@@ -1,10 +1,11 @@
-import { catchAsyncError } from "../../utils/catchAsyncError.js";
-import { trainerModel } from "../../../Database/models/Trainer.model.js";
-import { AppError } from "../../utils/AppError.js";
-import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
-import { determineFolderName } from "../../multer/multer.js";
+import { catchAsyncError } from "../../../utils/catchAsyncError.js";
+import { trainerModel } from "../../../../Database/models/Trainer.model.js";
+import { AppError } from "../../../utils/AppError.js";
+import { uploadImageToCloudinary } from "../../../utils/cloudinary.js";
+import { determineFolderName } from "../../../multer/multer.js";
 import fs from "fs";
-import { SubscriptionModel } from "../../../Database/models/subscription.model.js";
+import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
+import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 
 async function validateAndUpdateTrainer(id, statusUpdate, acceptPolicy) {
   const data = await trainerModel.findById(id);
@@ -286,6 +287,61 @@ const updateTrainerAbout = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
+  const id = req.user.payload.id;
+  let baseQuery = SubscriptionModel.find({ trainerId: id })
+    .select("startDate paidAmount status subscriptionType duration")
+    .populate({
+      path: "traineeId",
+      select: "firstName lastName",
+    })
+    .populate({
+      path: "package",
+      select: "packageName -_id",
+    });
+
+  let apiFeatures = new ApiFeatures(baseQuery, req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  let subscriptions = await apiFeatures.mongooseQuery;
+
+  if (!subscriptions || subscriptions.length === 0) {
+    return next(new AppError("Subscriptions not found", 404));
+  }
+
+  const data = subscriptions.map((subscription) => ({
+    id: subscription._id,
+    fullName: `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`,
+    packageName: subscription.package.packageName,
+    status: subscription.status,
+    startDate: subscription.startDate
+      ? subscription.startDate.toISOString().split("T")[0]
+      : null,
+    duration: subscription.duration,
+    subscriptionType: subscription.subscriptionType,
+    Amount: subscription.paidAmount,
+  }));
+
+  let totalCount = await SubscriptionModel.find(
+    apiFeatures.mongooseQuery.getQuery()
+  ).countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  res.status(200).json({
+    success: true,
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    message: "Subscriptions information retrieved successfully",
+    data,
+  });
+});
+
 export {
   updatePersonalInfo,
   getTrainerInfo,
@@ -295,4 +351,5 @@ export {
   getTrainerData,
   getTrainerAbout,
   updateTrainerAbout,
+  getAllSubscriptions,
 };

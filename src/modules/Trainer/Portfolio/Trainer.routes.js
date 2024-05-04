@@ -1,8 +1,8 @@
 import { Router } from "express";
 const trainerRoutes = Router();
 import * as Trainer from "./Trainer.controller.js";
-import { uploadMixOfFiles } from "../../multer/multer.js";
-import { verifyToken, allowedTo } from "../../middlewares/authToken.js";
+import { uploadMixOfFiles } from "../../../multer/multer.js";
+import { verifyToken, allowedTo } from "../../../middlewares/authToken.js";
 
 let arrFields = [
   { name: "profilePhoto", maxCount: 1 },
@@ -60,5 +60,10 @@ trainerRoutes.patch(
   allowedTo("trainer"),
   Trainer.updateTrainerAbout
 );
-
+trainerRoutes.get(
+  "/AllSubscriptions",
+  verifyToken,
+  allowedTo("trainer"),
+  Trainer.getAllSubscriptions
+);
 export default trainerRoutes;

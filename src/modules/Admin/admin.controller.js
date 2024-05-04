@@ -149,4 +149,69 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
   });
 });
 
-export { updatePersonalInfo, getAdminInfo, getSystemUsers };
+const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
+  const id = req.user.payload.id;
+
+  let baseQuery = SubscriptionModel.find()
+    .select("startDate paidAmount status subscriptionType duration")
+    .populate({
+      path: "trainerId",
+      select: "firstName lastName",
+    })
+    .populate({
+      path: "traineeId",
+      select: "firstName lastName",
+    })
+    .populate({
+      path: "package",
+      select: "packageName -_id",
+    });
+  let apiFeatures = new ApiFeatures(baseQuery, req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  let subscriptions = await apiFeatures.mongooseQuery;
+
+  if (!subscriptions || subscriptions.length === 0) {
+    return next(new AppError("Subscriptions not found", 404));
+  }
+
+  const data = subscriptions.map((subscription) => ({
+    id: subscription._id,
+    trainerName: `${subscription.trainerId.firstName} ${subscription.trainerId.lastName}`,
+    traineeName: `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`,
+    startDate: subscription.startDate
+      ? subscription.startDate.toISOString().split("T")[0]
+      : null,
+    packageName: subscription.package.packageName,
+    Amount: subscription.paidAmount,
+    duration: subscription.duration,
+    subscriptionType: subscription.subscriptionType,
+    status: subscription.status,
+  }));
+
+  let totalCount = await SubscriptionModel.find(
+    apiFeatures.mongooseQuery.getQuery()
+  ).countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  res.status(200).json({
+    success: true,
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    message: "Subscriptions information retrieved successfully",
+    data,
+  });
+});
+
+export {
+  updatePersonalInfo,
+  getAdminInfo,
+  getSystemUsers,
+  getAllSubscriptions,
+};

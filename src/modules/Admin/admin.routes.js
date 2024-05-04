@@ -25,4 +25,10 @@ adminRouter.get(
   allowedTo("admin"),
   admin.getSystemUsers
 );
+adminRouter.get(
+  "/AllSubscriptions",
+  verifyToken,
+  allowedTo("admin"),
+  admin.getAllSubscriptions
+);
 export default adminRouter;
