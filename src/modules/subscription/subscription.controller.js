@@ -336,6 +336,7 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
   }
   const traineeFullName = `${trainee.firstName} ${trainee.lastName}`;
   trainee.assignedTrainer = id;
+  trainee.status = "subscriber";
   await trainee.save();
   const { packageType, duration, _id } = trainee.package;
   await handlePackageType(
