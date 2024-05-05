@@ -81,7 +81,7 @@ const getReviews = catchAsyncError(async (req, res) => {
         year: "numeric",
       }),
       traineeName: `${review.trainee.firstName} ${review.trainee.lastName}`,
-      profilePhoto: review.trainee.profilePhoto,  // Include the profile photo
+      profilePhoto: review.trainee.profilePhoto, // Include the profile photo
       isCurrentUser: review.trainee._id.toString() === traineeId,
     }))
     .sort((a, b) => b.isCurrentUser - a.isCurrentUser); // This will ensure that current user's review comes first if present

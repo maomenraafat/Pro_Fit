@@ -80,6 +80,10 @@ const traineeSchema = new Schema(
       type: Number,
       default: 10000,
   },
+  waterGoal: {
+    type: Number,
+    default: 2000
+},
     role: {
       type: String,
       // enum: ["admin", "trainee"],
