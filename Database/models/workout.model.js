@@ -44,4 +44,4 @@ const workoutSchema = new Schema(
   }
 );
 
-export const WorkoutModel = model("WorkoutPlan", workoutSchema);
+export const WorkoutModel = model("workout", workoutSchema);

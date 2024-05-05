@@ -144,49 +144,39 @@ const nutritionSchema = new Schema(
         },
         meals: [
           {
-            meal: [
+            mealname: {
+              type: String,
+              required: [false, "Meal Name is required"],
+            },
+            mealtype: {
+              type: String,
+              enum: ["Breakfast", "Lunch", "Snack", "Dinner"],
+              required: false,
+            },
+            mealnote: {
+              type: String,
+            },
+            foods: [
               {
-                mealname: {
-                  type: String,
-                  required: [true, "Meal Name is required"],
+                food: { type: Schema.ObjectId, ref: "food" },
+                amount: {
+                  type: Number,
+                  default: 1,
                 },
-                mealtype: {
+                foodname: {
                   type: String,
-                  enum: ["Breakfast", "Lunch", "Snack", "Dinner"],
-                  required: false,
+                  required: [true, "Food Name is required"],
                 },
-                mealnote: {
+                foodImage: {
                   type: String,
+                  required: [true, "Food Image is required"],
                 },
-                foods: [
-                  {
-                    food: { type: Schema.ObjectId, ref: "food" },
-                    amount: {
-                      type: Number,
-                      default: 1,
-                    },
-                    foodname: {
-                      type: String,
-                      required: [true, "Food Name is required"],
-                    },
-                    foodImage: {
-                      type: String,
-                      required: [true, "Food Image is required"],
-                    },
-                    servingUnit: {
-                      type: String,
-                      enum: ["Gram", "Scoop", "Piece", "Mili", "Spoon", "Cup"],
-                      default: "Gram",
-                    },
-                    macros: {
-                      calories: { type: Number, min: 0 },
-                      proteins: { type: Number, min: 0 },
-                      fats: { type: Number, min: 0 },
-                      carbs: { type: Number, min: 0 },
-                    },
-                  },
-                ],
-                mealmacros: {
+                servingUnit: {
+                  type: String,
+                  enum: ["Gram", "Scoop", "Piece", "Mili", "Spoon", "Cup"],
+                  default: "Gram",
+                },
+                macros: {
                   calories: { type: Number, min: 0 },
                   proteins: { type: Number, min: 0 },
                   fats: { type: Number, min: 0 },
@@ -194,6 +184,12 @@ const nutritionSchema = new Schema(
                 },
               },
             ],
+            mealmacros: {
+              calories: { type: Number, min: 0 },
+              proteins: { type: Number, min: 0 },
+              fats: { type: Number, min: 0 },
+              carbs: { type: Number, min: 0 },
+            },
           },
         ],
         daymacros: {
