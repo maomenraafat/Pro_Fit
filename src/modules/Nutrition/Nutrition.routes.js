@@ -17,10 +17,10 @@ NutritionRouter.patch(
 );
 
 NutritionRouter.get(
-  "/",
+  "/MyPlans",
   verifyToken,
   allowedTo("trainer"),
-  Nutrition.getNutritionPlans
+  Nutrition.getNutritionMyPlans
 );
 NutritionRouter.get(
   "/:id",

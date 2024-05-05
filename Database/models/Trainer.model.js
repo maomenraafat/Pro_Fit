@@ -295,22 +295,21 @@ trainerSchema.methods.updateSubscriptions = async function () {
 };
 
 trainerSchema.methods.calculateTotalPaidAmount = async function () {
-  if (!this._id) return 0; // Guard clause if the trainer's ID isn't available
+  if (!this._id) return 0;
   const result = await SubscriptionModel.aggregate([
     {
       $match: {
-        trainerId: this._id, // Filter subscriptions by this trainer's ID
+        trainerId: this._id,
       },
     },
     {
       $group: {
-        _id: null, // Grouping key is null because we want to aggregate all
-        totalPaidAmount: { $sum: "$paidAmount" }, // Sum up all the paid amounts
+        _id: null,
+        totalPaidAmount: { $sum: "$paidAmount" },
       },
     },
   ]);
 
-  // If the aggregation returns a result, return the total paid amount, otherwise return 0
   this.paidAmount = result;
   return result.length > 0 ? result[0].totalPaidAmount : 0;
 };

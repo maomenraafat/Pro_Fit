@@ -192,6 +192,9 @@ const nutritionSchema = new Schema(
             },
           },
         ],
+        mealsCount: {
+          type: Number,
+        },
         daymacros: {
           calories: { type: Number, default: 0 },
           proteins: { type: Number, default: 0 },
