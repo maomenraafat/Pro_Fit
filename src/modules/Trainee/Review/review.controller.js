@@ -38,9 +38,10 @@ const getReviews = catchAsyncError(async (req, res) => {
   const { trainerId } = req.params;
   const traineeId = req.user.payload.id; // Assuming you can access the trainee's ID from the request
 
+  // Update the populate method to include the profilePhoto
   const reviews = await reviewModel
     .find({ trainer: trainerId })
-    .populate("trainee", "firstName lastName");
+    .populate("trainee", "firstName lastName profilePhoto");
 
   // If no reviews, provide a successful empty response
   if (reviews.length === 0) {
@@ -80,6 +81,7 @@ const getReviews = catchAsyncError(async (req, res) => {
         year: "numeric",
       }),
       traineeName: `${review.trainee.firstName} ${review.trainee.lastName}`,
+      profilePhoto: review.trainee.profilePhoto,  // Include the profile photo
       isCurrentUser: review.trainee._id.toString() === traineeId,
     }))
     .sort((a, b) => b.isCurrentUser - a.isCurrentUser); // This will ensure that current user's review comes first if present
@@ -93,6 +95,7 @@ const getReviews = catchAsyncError(async (req, res) => {
     },
   });
 });
+
 
 const getSpecificReview = catchAsyncError(async (req, res) => {
   const { trainerId } = req.params;

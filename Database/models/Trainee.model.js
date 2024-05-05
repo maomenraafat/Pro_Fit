@@ -76,6 +76,10 @@ const traineeSchema = new Schema(
       type: String,
       trim: true,
     },
+    stepGoal: {
+      type: Number,
+      default: 10000,
+  },
     role: {
       type: String,
       // enum: ["admin", "trainee"],
