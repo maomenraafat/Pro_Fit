@@ -300,7 +300,6 @@ trainerSchema.methods.calculateTotalPaidAmount = async function () {
     {
       $match: {
         trainerId: this._id, // Filter subscriptions by this trainer's ID
-        status: "Active", // Consider only active subscriptions
       },
     },
     {
