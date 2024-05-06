@@ -47,7 +47,7 @@ const addChallenge = catchAsyncError(async (req, res) => {
 });
 
 
-// Function to give up on a challenge
+// Function to give up/restart a challenge
 const toggleChallengeStatus = catchAsyncError(async (req, res) => {
   const { challengeId } = req.params;
   const traineeId = req.user.payload.id;
