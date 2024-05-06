@@ -212,7 +212,7 @@ const nutritionSchema = new Schema(
     plantype: {
       type: String,
       enum: ["Free plan", "Customized plan", "My plan"],
-      default: "Customized Plan",
+      default: "Customized plan",
     },
     published: { type: Boolean, default: false },
   },
