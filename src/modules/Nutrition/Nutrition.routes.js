@@ -23,6 +23,12 @@ NutritionRouter.get(
   Nutrition.getNutritionMyPlans
 );
 NutritionRouter.get(
+  "/FreePlans",
+  verifyToken,
+  allowedTo("trainer"),
+  Nutrition.getNutritionFreePlans
+);
+NutritionRouter.get(
   "/:id",
   verifyToken,
   allowedTo("trainer"),

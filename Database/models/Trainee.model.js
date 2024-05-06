@@ -79,11 +79,11 @@ const traineeSchema = new Schema(
     stepGoal: {
       type: Number,
       default: 10000,
-  },
-  waterGoal: {
-    type: Number,
-    default: 2000
-},
+    },
+    waterGoal: {
+      type: Number,
+      default: 2000,
+    },
     role: {
       type: String,
       // enum: ["admin", "trainee"],

@@ -47,6 +47,7 @@ subscriptionSchema.pre("save", async function (next) {
     if (packageData) {
       if (packageData.duration) {
         this.duration = packageData.duration;
+        this.paidAmount = packageData.price;
         this.endDate = new Date(this.startDate.getTime());
         this.endDate.setMonth(this.startDate.getMonth() + packageData.duration);
       }

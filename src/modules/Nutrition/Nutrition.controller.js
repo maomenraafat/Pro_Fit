@@ -64,22 +64,50 @@ const getNutritionMyPlans = catchAsyncError(async (req, res, next) => {
     .paginate()
     .fields();
 
-  // Execute the query to get the data
   const data = await apiFeatures.mongooseQuery;
 
-  // Optionally, count the total documents matching the query without pagination
   const totalCount = await nutritionModel
     .find(apiFeatures.mongooseQuery.getQuery())
     .countDocuments();
 
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
-  // Handle case where no data is found
   if (data.length === 0) {
     return next(new AppError("No nutrition plans found", 404));
   }
 
-  // Send response with the data and additional pagination details
+  res.status(200).json({
+    status: "success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    data,
+  });
+});
+const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
+  let Query = { trainer: trainerId, plantype: "Free plan" };
+
+  let apiFeatures = new ApiFeatures(nutritionModel.find(Query), req.query)
+    .search()
+    .sort()
+    .filter()
+    .paginate()
+    .fields();
+
+  const data = await apiFeatures.mongooseQuery;
+
+  const totalCount = await nutritionModel
+    .find(apiFeatures.mongooseQuery.getQuery())
+    .countDocuments();
+
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  if (data.length === 0) {
+    return next(new AppError("No nutrition plans found", 404));
+  }
+
   res.status(200).json({
     status: "success",
     totalDocuments: totalCount,
@@ -127,6 +155,7 @@ export {
   addNutritionPlan,
   updateNutritionPlan,
   getNutritionMyPlans,
+  getNutritionFreePlans,
   getSpecificNutritionPlan,
   deleteNutritionPlan,
 };
