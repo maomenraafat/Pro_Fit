@@ -25,6 +25,7 @@ import traineeReviewRouter from "./src/modules/Trainee/Review/review.routes.js";
 import tranieeheartRate from "./src/modules/Trainee/Home/Heart Rate/heartRate.routes.js";
 import tranieeRecordSteps from "./src/modules/Trainee/Home/Record Steps/recordSteps.routes.js";
 import traineeWaterIntake from "./src/modules/Trainee/Home/Water Intake/waterIntake.routes.js";
+import traineeChallengeRouter from "./src/modules/Trainee/Home/Challenges/challenge.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -51,6 +52,7 @@ app.use("/api/v1/trainees", traineeReviewRouter);
 app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
 app.use("/api/v1/trainees/steps",tranieeRecordSteps);
 app.use("/api/v1/trainees/water",traineeWaterIntake);
+app.use("/api/v1/trainees/challenge",traineeChallengeRouter);
 app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 
 //app.use("/api/v1/trainees/subscription", SubscriptionRouter);
