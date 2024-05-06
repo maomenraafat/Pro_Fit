@@ -99,6 +99,9 @@ export const uploadqualification = () => {
 export const uploadTraineeImage = () => {
   return multerRefactor().single("profilePhoto");
 };
+export const uploadChallengeImage = () => {
+  return multerRefactor().single("challengeImage");
+};
 
 export const uploadExerciseImage = () => {
   return multerRefactor().single("ExerciseImage");

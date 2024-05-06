@@ -6,7 +6,7 @@ import { allowedTo, verifyToken } from "../../../middlewares/authToken.js";
 
 import multer from "multer";
 
-const upload = multer();  // Using default storage, which is memory storage, but we will stream directly to Cloudinary
+const upload = multer();  
 
 
 
