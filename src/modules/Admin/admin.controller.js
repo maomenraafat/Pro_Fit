@@ -176,7 +176,16 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
   let subscriptions = await apiFeatures.mongooseQuery;
 
   if (!subscriptions || subscriptions.length === 0) {
-    return next(new AppError("Subscriptions not found", 404));
+    res.status(200).json({
+      success: true,
+      totalDocuments: 0,
+      totalPages: 0,
+      page: apiFeatures.page,
+      limit: apiFeatures.limit,
+      message: "No subscriptions found",
+      data: [],
+    });
+    return;
   }
 
   const data = subscriptions.map((subscription) => ({
