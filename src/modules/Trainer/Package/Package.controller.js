@@ -3,6 +3,7 @@ import { trainerModel } from "../../../../Database/models/Trainer.model.js";
 import { ClientTransformationModel } from "../../../../Database/models/clientTransformations.js";
 import { PackageModel } from "../../../../Database/models/Package.model.js";
 import { AppError } from "../../../utils/AppError.js";
+import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 
 const addPackage = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
@@ -48,17 +49,41 @@ const getSpecificPackage = catchAsyncError(async (req, res, next) => {
 });
 const getTrainerpackages = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  console.log(req.user);
-  const data = await PackageModel.find({
+  let baseQuery = PackageModel.find({
     trainerId: id,
   });
-  if (!data) {
-    return next(new AppError("data not found", 404));
+  let apiFeatures = new ApiFeatures(baseQuery, req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+  let data = await apiFeatures.mongooseQuery;
+  if (!data || data.length === 0) {
+    res.status(200).json({
+      success: true,
+      totalDocuments: 0,
+      totalPages: 0,
+      page: apiFeatures.page,
+      limit: apiFeatures.limit,
+      message: "No data found",
+      data: [],
+    });
+    return;
   }
-  res.status(201).json({
+  let totalCount = await PackageModel.find(
+    apiFeatures.mongooseQuery.getQuery()
+  ).countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  res.status(200).json({
     success: true,
-    message: " success",
-    data: data,
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    message: "Packages information retrieved successfully",
+    data,
   });
 });
 

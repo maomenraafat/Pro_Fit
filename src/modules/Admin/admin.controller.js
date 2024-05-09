@@ -109,7 +109,16 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
 
   let users = await apiFeatures.mongooseQuery;
   if (!users || users.length === 0) {
-    return next(new AppError("No data found", 404));
+    res.status(200).json({
+      success: true,
+      totalDocuments: 0,
+      totalPages: 0,
+      page: apiFeatures.page,
+      limit: apiFeatures.limit,
+      message: "No data found",
+      data: [],
+    });
+    return;
   }
 
   if (!isTrainee) {

@@ -134,7 +134,7 @@ const getTrainerInfoBar = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await trainerModel
     .findById(id)
-    .select("profilePhoto firstName lastName email phoneNumber");
+    .select("profilePhoto firstName lastName email phoneNumber status");
   if (!data) {
     return next(new AppError("No trainer found with that ID", 404));
   }
