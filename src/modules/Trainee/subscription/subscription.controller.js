@@ -1,14 +1,13 @@
-import { trainerModel } from "../../../Database/models/Trainer.model.js";
-import { traineeBasicInfoModel } from "../../../Database/models/traineeBasicInfo.model.js";
-import { AppError } from "../../utils/AppError.js";
-import { catchAsyncError } from "../../utils/catchAsyncError.js";
-import { traineeModel } from "../../../Database/models/Trainee.model.js";
-import { PackageModel } from "../../../Database/models/Package.model.js";
-import { nutritionModel } from "../../../Database/models/nutrition.model.js";
-import { WorkoutModel } from "../../../Database/models/workout.model.js";
-import { traineeDietAssesmentModel } from "../../../Database/models/traineeDietAssesment.model.js";
-import { traineeWorkoutAssesmentModel } from "../../../Database/models/traineeWorkoutAssesment.model.js";
-import { SubscriptionModel } from "../../../Database/models/subscription.model.js";
+import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
+import { AppError } from "../../../utils/AppError.js";
+import { catchAsyncError } from "../../../utils/catchAsyncError.js";
+import { traineeModel } from "../../../../Database/models/Trainee.model.js";
+import { PackageModel } from "../../../../Database/models/Package.model.js";
+import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
+import { WorkoutModel } from "../../../../Database/models/workout.model.js";
+import { traineeDietAssesmentModel } from "../../../../Database/models/traineeDietAssesment.model.js";
+import { traineeWorkoutAssesmentModel } from "../../../../Database/models/traineeWorkoutAssesment.model.js";
+import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
 
 const PACKAGE_TYPES = {
   NUTRITION_WORKOUT: "Nutrition & Workout Plan",
@@ -129,6 +128,9 @@ const createDietAssessment = async (trainerId, traineeId) => {
     dietAssessment = new traineeDietAssesmentModel(assessmentData);
     await dietAssessment.save();
   }
+  await traineeModel.findByIdAndUpdate(traineeId, {
+    traineeDietAssesment: dietAssessment._id,
+  });
 
   // const nutritionAssessmentData = {
   //   trainer: trainerId,
@@ -237,7 +239,6 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
   const data = await PackageModel.find({
     trainerId: id,
   }).select("packageName price description duration packageType");
-
   if (!data) {
     return next(new AppError("data not found", 404));
   }
@@ -271,9 +272,10 @@ const selectPackage = catchAsyncError(async (req, res, next) => {
     { new: true, runValidators: true }
   );
   const trainee = await traineeModel.findById(traineeId).populate("package");
-  trainee.package = packageId;
-  await trainee.save();
 
+  trainee.package = packageId;
+  trainee.assignedTrainer = selectedPackage.trainerId;
+  await trainee.save();
   if (!selectedPackage) {
     return next(new AppError("Error updating package with trainee", 500));
   }
@@ -299,10 +301,10 @@ const getTrainerAndPackageDetails = catchAsyncError(async (req, res, next) => {
       path: "assignedTrainer",
       select: "firstName lastName profilePhoto -_id",
     });
-
   if (!trainee || !trainee.assignedTrainer || !trainee.package) {
     return next(new AppError("Details not found for this trainee", 404));
   }
+
   const trainerFullName = `${trainee.assignedTrainer.firstName} ${trainee.assignedTrainer.lastName}`;
   const { profilePhoto } = trainee.assignedTrainer;
   const { packageType, duration } = trainee.package;
@@ -351,6 +353,7 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
     traineeId: traineeId,
     package: _id,
     status: "Active",
+    paidAmount: req.body.paidAmount,
   });
   await newSubscription.save();
 

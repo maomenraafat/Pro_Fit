@@ -23,34 +23,61 @@ const dietAssesmentSchema = new Schema(
     birthDate: {
       type: Date,
     },
-    weight: {
-      type: Number,
-    },
     height: {
       type: Number,
     },
-    fitnessGoals: {
-      type: String,
-      enum: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
-    },
-    activityLevel: {
-      type: String,
-      enum: [
-        "Extremely Active",
-        "Very Active",
-        "Moderate Active",
-        "Lightly Active",
-        "In active",
-      ],
-    },
     ////////////////////////////////
+    /* dietpreferences*/
     foodAllergens: {
       type: [String],
-      default: [],
+      enum: [
+        "Milk",
+        "Eggs",
+        "Fish",
+        "Shellfish",
+        "Tree Nuts",
+        "Peanuts",
+        "Wheat",
+        "Soybeans",
+        "Corn",
+        "Gelatin",
+        "Beef",
+        "Chicken",
+        "Mutton",
+        "Sesame",
+        "Sunflower",
+        "Poppy",
+        "Citrus",
+        "Strawberries",
+        "Bananas",
+        "Garlic",
+        "Onions",
+        "Coriander",
+        "Mustard",
+        "Oats",
+        "Rye",
+      ],
     },
-    desease: {
+    disease: {
       type: [String],
-      default: [],
+      enum: [
+        "Diabetes Type 1",
+        "Diabetes Type 2",
+        "Celiac Disease",
+        "Irritable Bowel Syndrome",
+        "Lactose Intolerance",
+        "Hypertension",
+        "Hyperlipidemia",
+        "Gout",
+        "Osteoporosis",
+        "Kidney Disease",
+        "Heart Disease",
+        "Gastroesophageal Reflux Disease",
+        "Obesity",
+        "Anemia",
+        "Polycystic Ovary Syndrome",
+        "Thyroid Disorders",
+      ],
     },
     religionrestriction: {
       type: [String],
@@ -74,14 +101,45 @@ const dietAssesmentSchema = new Schema(
       min: 1,
       required: false,
     },
-    bodyMeasurements: {
-      neckCircumference: Number,
-      chestCircumference: Number,
-      armCircumference: Number,
-      waistCircumference: Number,
-      hipCircumference: Number,
-      thighCircumference: Number,
+
+    /*bodyMeasurements*/
+    weight: {
+      type: Number,
     },
+    bodyFat: {
+      type: Number,
+    },
+    waistArea: {
+      type: Number,
+    },
+    neckArea: {
+      type: Number,
+    },
+
+    /*personalData*/
+    fitnessGoals: {
+      type: String,
+      enum: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
+    },
+    activityLevel: {
+      type: String,
+      enum: [
+        "Extremely Active",
+        "Very Active",
+        "Moderate Active",
+        "Lightly Active",
+        "In active",
+      ],
+    },
+
+    // bodyMeasurements: {
+    //   neckCircumference: Number,
+    //   chestCircumference: Number,
+    //   armCircumference: Number,
+    //   waistCircumference: Number,
+    //   hipCircumference: Number,
+    //   thighCircumference: Number,
+    // },
     macros: {
       calories: { type: Number, min: 0 },
       proteins: { type: Number, min: 0 },
@@ -90,7 +148,7 @@ const dietAssesmentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Current", "Archived"],
+      enum: ["Current", "Last", "Archived"],
       default: "Current",
     },
     documents: [

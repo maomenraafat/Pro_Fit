@@ -1,7 +1,7 @@
 import { Router } from "express";
 const SubscriptionRouter = Router();
 import * as Subscription from "./subscription.controller.js";
-import { allowedTo, verifyToken } from "../../middlewares/authToken.js";
+import { allowedTo, verifyToken } from "../../../middlewares/authToken.js";
 
 SubscriptionRouter.get(
   "/getPackages/:id",
