@@ -1,9 +1,21 @@
+import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
-import { traineeDietAssesmentModel } from "../../../../Database/models/traineeDietAssesment.model.js";
+import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
+import { traineeDietAssessmentModel } from "../../../../Database/models/traineeDietAssessment.model.js";
 import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
 
 const calculateMacronutrients = async (trainee) => {
+  if (
+    !trainee ||
+    !trainee.weight ||
+    !trainee.height ||
+    !trainee.birthDate ||
+    !trainee.gender
+  ) {
+    console.error("Invalid trainee data provided:", trainee);
+    return { macros: { calories: 0, proteins: 0, fats: 0, carbs: 0 } }; // Return zero macros if data is incomplete
+  }
   // Macronutrient ratios
   const proteinRatio = 0.3;
   const fatRatio = 0.25;
@@ -71,19 +83,33 @@ const calculateMacronutrients = async (trainee) => {
     },
   };
 };
-const getFirstDiestAssessment = catchAsyncError(async (req, res, next) => {
+const getDietAssessments = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
-  console.log(traineeId);
-  const data = await traineeDietAssesmentModel.findOne({ trainee: traineeId });
-  if (!data) {
-    return next(new AppError("data not found", 404));
-  }
+  const data = await traineeDietAssessmentModel.findOne({ trainee: traineeId });
+  // if (!data) {
+  //   return next(new AppError("data not found", 404));
+  // }
   res.status(200).json({ success: true, data });
 });
 
-const FillFirstDietAssessment = catchAsyncError(async (req, res, next) => {
+const FillDietAssessment = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
-  console.log(traineeId);
+  const traineeBasicInfo = await traineeBasicInfoModel
+    .findOne({
+      trainee: traineeId,
+    })
+    .populate({
+      path: "trainee",
+      select: "assignedTrainer firstName lastName ",
+    });
+
+  if (!traineeBasicInfo) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee basic info not found.",
+    });
+  }
+
   const {
     foodAllergens,
     disease,
@@ -98,7 +124,31 @@ const FillFirstDietAssessment = catchAsyncError(async (req, res, next) => {
     activityLevel,
   } = req.body;
 
-  const assessmentData = {
+  const { gender, birthDate, height } = traineeBasicInfo;
+  const assignedTrainer = traineeBasicInfo.trainee.assignedTrainer;
+  const traineeFullName = `${traineeBasicInfo.trainee.firstName} ${traineeBasicInfo.trainee.lastName}`;
+
+  const existingPlan = await nutritionModel.updateMany(
+    { trainee: traineeId, status: "Current" },
+    { status: "Archived" },
+    { new: true }
+  );
+
+  const existingAssessment = await traineeDietAssessmentModel.findOneAndUpdate(
+    { trainee: traineeId, status: "Current" },
+    { status: "Archived" },
+    { new: true }
+  );
+
+  const AssessmentData = {
+    trainer: assignedTrainer,
+    trainee: traineeId,
+    gender,
+    birthDate,
+    weight,
+    height,
+    fitnessGoals,
+    activityLevel,
     foodAllergens,
     disease,
     religionrestriction,
@@ -108,53 +158,48 @@ const FillFirstDietAssessment = catchAsyncError(async (req, res, next) => {
     bodyFat,
     waistArea,
     neckArea,
-    fitnessGoals,
-    activityLevel,
+    status: "Current",
   };
 
-  const updatedDietAssessment =
-    await traineeDietAssesmentModel.findOneAndUpdate(
-      { trainee: traineeId, status: "Current" },
-      assessmentData,
-      { new: true, runValidators: true }
-    );
+  const newDietAssessment = new traineeDietAssessmentModel(AssessmentData);
+  await newDietAssessment.save();
 
-  // Check if the document was found and updated
-  if (!updatedDietAssessment) {
-    return res.status(404).json({
-      success: false,
-      message: "No current assessment found or update failed for this trainee.",
-    });
-  }
+  const macros = await calculateMacronutrients({
+    gender,
+    birthDate,
+    weight,
+    height,
+    fitnessGoals,
+    activityLevel,
+  });
 
-  const macros = await calculateMacronutrients(
-    updatedDietAssessment.toObject()
+  newDietAssessment.macros = macros.macros;
+  await newDietAssessment.save();
+
+  const newNutritionPlan = new nutritionModel({
+    trainer: assignedTrainer,
+    trainee: traineeId,
+    planName: traineeFullName,
+    planmacros: macros.macros,
+    status: "Current",
+    foodAllergens,
+    disease,
+    religionrestriction,
+    dietType,
+    numberofmeals,
+  });
+  await newNutritionPlan.save();
+  await traineeModel.findByIdAndUpdate(
+    traineeId,
+    { dietAssessmentStatus: "Ready" },
+    { new: true }
   );
-  updatedDietAssessment.macros = macros.macros;
-  await updatedDietAssessment.save();
 
-  const { _id, ...updateData } = updatedDietAssessment.toObject();
-
-  const updatednutritionplan = await nutritionModel.findOneAndUpdate(
-    { trainee: traineeId, status: "Current" },
-    updateData,
-    { new: true, runValidators: true }
-  );
-
-  if (!updatednutritionplan) {
-    return res.status(404).json({
-      success: false,
-      message:
-        "No current nutrition plan found or update failed for this trainee.",
-    });
-  }
-
-  updatednutritionplan.planmacros = macros.macros;
-  await updatednutritionplan.save();
-
-  res
-    .status(200)
-    .json({ success: true, data: updatedDietAssessment, updatednutritionplan });
+  res.status(200).json({
+    success: true,
+    data: newDietAssessment,
+    updatednutritionplan: newNutritionPlan,
+  });
 });
 
-export { getFirstDiestAssessment, FillFirstDietAssessment };
+export { getDietAssessments, FillDietAssessment };

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-const dietAssesmentSchema = new Schema(
+const dietAssessmentSchema = new Schema(
   {
     trainee: {
       type: Schema.ObjectId,
@@ -164,7 +164,7 @@ const dietAssesmentSchema = new Schema(
   }
 );
 
-export const traineeDietAssesmentModel = mongoose.model(
-  "traineeDietAssesment",
-  dietAssesmentSchema
+export const traineeDietAssessmentModel = mongoose.model(
+  "traineeDietAssessment",
+  dietAssessmentSchema
 );

@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 
-const traineeWorkoutAssesmentSchema = new Schema(
+const traineeWorkoutAssessmentSchema = new Schema(
   {
     trainee: {
       type: Schema.ObjectId,
@@ -62,7 +62,7 @@ const traineeWorkoutAssesmentSchema = new Schema(
   }
 );
 
-export const traineeWorkoutAssesmentModel = model(
-  "traineeWorkoutAssesment",
-  traineeWorkoutAssesmentSchema
+export const traineeWorkoutAssessmentModel = model(
+  "traineeWorkoutAssessment",
+  traineeWorkoutAssessmentSchema
 );

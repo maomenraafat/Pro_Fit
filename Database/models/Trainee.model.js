@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
+import { traineeDietAssessmentModel } from "./traineeDietAssessment.model.js";
 
 const traineeSchema = new Schema(
   {
@@ -29,16 +30,26 @@ const traineeSchema = new Schema(
     },
     //-------------------------------------------------------------------------------------------------------------------------
 
-    traineeWorkoutAssesment: {
+    traineeWorkoutAssessment: {
       type: Schema.ObjectId,
-      ref: "traineeWorkoutAssesment",
+      ref: "traineeWorkoutAssessment",
+    },
+    workoutAssessmentStatus: {
+      type: String,
+      enum: ["Ready", "In Preparation", "Work", "Pending", "Not Allowed"],
+      default: "Not Allowed",
     },
 
     //-------------------------------------------------------------------------------------------------------------------------
 
-    traineeDietAssesment: {
+    traineeDietAssessment: {
       type: Schema.ObjectId,
-      ref: "traineeDietAssesment",
+      ref: "traineeDietAssessment",
+    },
+    dietAssessmentStatus: {
+      type: String,
+      enum: ["Ready", "In Preparation", "Working", "Pending", "Not Allowed"],
+      default: "Not Allowed",
     },
 
     //-------------------------------------------------------------------------------------------------------------------------
@@ -142,5 +153,20 @@ traineeSchema.pre("save", async function (next) {
 
   next();
 });
+
+traineeSchema.methods.setCurrentDietAssessment = async function () {
+  const TraineeDietAssessment = this.model("traineeDietAssessment");
+  const currentAssessment = await traineeDietAssessmentModel.findOne({
+    trainee: this._id,
+    status: "Current",
+  });
+  if (currentAssessment) {
+    this.traineeDietAssessment = currentAssessment._id;
+    await this.save();
+    return this.traineeDietAssessment;
+  } else {
+    throw new Error("No current diet assessment found for this trainee.");
+  }
+};
 
 export const traineeModel = model("Trainee", traineeSchema);

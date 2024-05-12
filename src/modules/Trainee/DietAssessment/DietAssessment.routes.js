@@ -1,19 +1,29 @@
 import { Router } from "express";
 const DietAssessmentRouter = Router();
 import * as DietAssessment from "./DietAssessment.controller.js";
-import { allowedTo, verifyToken } from "../../../middlewares/authToken.js";
+import {
+  allowedTo,
+  restrictAccess,
+  verifyToken,
+} from "../../../middlewares/authToken.js";
 
 DietAssessmentRouter.get(
-  "/FirstDiestAssessment",
+  "/DiestAssessments",
   verifyToken,
   allowedTo("trainee"),
-  DietAssessment.getFirstDiestAssessment
+  DietAssessment.getDietAssessments
 );
-DietAssessmentRouter.patch(
-  "/FillFirstDiestAssessment",
+DietAssessmentRouter.post(
+  "/FillDietAssessment",
   verifyToken,
   allowedTo("trainee"),
-  DietAssessment.FillFirstDietAssessment
+  restrictAccess(
+    "dietAssessmentStatus",
+    ["In Preparation", "Working", "Pending"],
+    "id",
+    true
+  ),
+  DietAssessment.FillDietAssessment
 );
 
 export default DietAssessmentRouter;
