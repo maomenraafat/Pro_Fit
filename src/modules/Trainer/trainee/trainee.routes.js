@@ -8,18 +8,6 @@ import {
 } from "../../../middlewares/authToken.js";
 
 trainerTraineesRouter.get(
-  "/getTraineeCustomizePlan/:id",
-  verifyToken,
-  allowedTo("trainer"),
-  trainee.getTraineeCustomizePlan
-);
-trainerTraineesRouter.patch(
-  "/createTraineeCustomizePlan/:id",
-  verifyToken,
-  allowedTo("trainer"),
-  trainee.createTraineeCustomizePlan
-);
-trainerTraineesRouter.get(
   "/getActiveTrainees",
   verifyToken,
   allowedTo("trainer"),
@@ -43,6 +31,30 @@ trainerTraineesRouter.patch(
   allowedTo("trainer"),
   restrictAccess("dietAssessmentStatus", ["Working", "Pending"], "id", false),
   trainee.makeRequestAssessment
+);
+trainerTraineesRouter.get(
+  "/getAllCustomizePlans/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getAllCustomizePlans
+);
+trainerTraineesRouter.get(
+  "/getTraineeCustomizePlan/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeCustomizePlan
+);
+trainerTraineesRouter.patch(
+  "/createTraineeCustomizePlan/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.createTraineeCustomizePlan
+);
+trainerTraineesRouter.get(
+  "/getTraineesSubscription/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineesSubscription
 );
 
 export default trainerTraineesRouter;

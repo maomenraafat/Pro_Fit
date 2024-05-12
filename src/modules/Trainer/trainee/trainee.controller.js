@@ -171,7 +171,6 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     data: subscriptions,
   });
 });
-
 const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await traineeModel
@@ -204,7 +203,62 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
+  const id = req.params.id;
+  await traineeModel.findByIdAndUpdate(
+    id,
+    { dietAssessmentStatus: "In Preparation" },
+    { new: true }
+  );
+  res.status(200).json({
+    success: true,
+    message: "Request sent successfully",
+  });
+});
+const getAllCustomizePlans = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
+  const id = req.params.id;
+  let baseQuery = nutritionModel.find({
+    trainer: trainerId,
+    trainee: id,
+  });
 
+  let apiFeatures = new ApiFeatures(baseQuery, req.query)
+    .sort()
+    .search()
+    .filter()
+    .paginate()
+    .fields();
+
+  let data = await apiFeatures.mongooseQuery;
+  if (!data || data.length === 0) {
+    return res.status(200).json({
+      success: true,
+      totalDocuments: 0,
+      totalPages: 0,
+      page: apiFeatures.page,
+      limit: apiFeatures.limit,
+      message: "No Plans found",
+      data: [],
+    });
+  }
+
+  let totalCount = await nutritionModel.countDocuments(
+    apiFeatures.mongooseQuery.getQuery()
+  );
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+  res.status(200).json({
+    success: true,
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    message: "Plans retrieved successfully",
+    data,
+  });
+});
 const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
@@ -212,6 +266,7 @@ const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
     .findOne({
       trainer: trainerId,
       trainee: id,
+      status: "Current",
     })
     .populate({ path: "trainee", select: "dietAssessmentStatus" });
   if (!data) {
@@ -248,17 +303,51 @@ const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
-const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
+const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
-  await traineeModel.findByIdAndUpdate(
-    id,
-    { dietAssessmentStatus: "In Preparation" },
-    { new: true }
+  let baseQuery = SubscriptionModel.find({
+    trainerId,
+    traineeId: id,
+  })
+    .select("subscriptionType duration paidAmount startDate endDate status")
+    .populate({
+      path: "package",
+      select: "packageName ",
+    });
+  let apiFeatures = new ApiFeatures(baseQuery, req.query)
+    .sort()
+    .search()
+    .filter()
+    .paginate()
+    .fields();
+
+  let subscriptions = await apiFeatures.mongooseQuery;
+  if (!subscriptions || subscriptions.length === 0) {
+    return res.status(200).json({
+      success: true,
+      totalDocuments: 0,
+      totalPages: 0,
+      page: apiFeatures.page,
+      limit: apiFeatures.limit,
+      message: "No  Subscription found",
+      data: [],
+    });
+  }
+
+  let totalCount = await SubscriptionModel.countDocuments(
+    apiFeatures.mongooseQuery.getQuery()
   );
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
   res.status(200).json({
     success: true,
-    message: "Request sent successfully",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    message: " Subscription retrieved successfully",
+    data: subscriptions,
   });
 });
 
@@ -266,7 +355,9 @@ export {
   getActiveTrainees,
   getTraineesDietAssessment,
   getSpecificTrainee,
+  getAllCustomizePlans,
   getTraineeCustomizePlan,
   createTraineeCustomizePlan,
   makeRequestAssessment,
+  getTraineesSubscription,
 };
