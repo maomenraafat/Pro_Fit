@@ -107,6 +107,19 @@ export class ApiFeatures {
       let sortedBy = this.queryString.sort.split(",").join(" ");
       this.mongooseQuery.sort(sortedBy);
     }
+    // else {
+    //   // Default sort: prioritize 'Ready' status for dietAssessmentStatus
+    //   this.mongooseQuery = this.mongooseQuery.sort({
+    //     "traineeId.dietAssessmentStatus": -1,
+    //   });
+    // }
+    else {
+      // Default sort by the 'createdAt' field of 'traineeDietAssessment' from oldest to newest
+      this.mongooseQuery.sort({
+        "traineeId.traineeDietAssessment.dietAssessmentStatus": -1,
+        "traineeId.traineeDietAssessment.createdAt": 1,
+      });
+    }
     return this;
   }
 

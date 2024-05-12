@@ -66,26 +66,6 @@ const allowedTo = (...permittedRoles) => {
   };
 };
 
-// const restrictAccess = (statusField) => {
-//   return async (req, res, next) => {
-//     console.log(req.user.payload.id);
-//     const trainee = await traineeModel.findById({ _id: req.user.payload.id });
-
-//     if (!trainee) {
-//       return res.status(404).json({ message: "Trainee not found" });
-//     }
-
-//     const allowedStatuses = ["In Preparation", "Working", "Pending"];
-
-//     if (!allowedStatuses.includes(trainee[statusField])) {
-//       return res.status(403).json({
-//         message: "Access denied. Your status does not permit access.",
-//       });
-//     }
-//     next();
-//   };
-// };
-
 const restrictAccess = (
   statusField,
   allowedStatuses,
@@ -93,7 +73,6 @@ const restrictAccess = (
   useTokenAsPrimary = false
 ) => {
   return async (req, res, next) => {
-    // Choose primary source based on the mode
     const userId = useTokenAsPrimary
       ? req.user?.payload?.id || req.params[idParamName]
       : req.params[idParamName] || req.user?.payload?.id;
