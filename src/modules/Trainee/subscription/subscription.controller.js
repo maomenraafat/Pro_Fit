@@ -5,8 +5,8 @@ import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 import { PackageModel } from "../../../../Database/models/Package.model.js";
 import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
 import { WorkoutModel } from "../../../../Database/models/workout.model.js";
-import { traineeDietAssesmentModel } from "../../../../Database/models/traineeDietAssesment.model.js";
-import { traineeWorkoutAssesmentModel } from "../../../../Database/models/traineeWorkoutAssesment.model.js";
+import { traineeDietAssessmentModel } from "../../../../Database/models/traineeDietAssessment.model.js";
+import { traineeWorkoutAssessmentModel } from "../../../../Database/models/traineeWorkoutAssessment.model.js";
 import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
 
 const PACKAGE_TYPES = {
@@ -41,7 +41,8 @@ const handlePackageType = async (
   duration,
   trainerId,
   traineeId,
-  traineeFullName
+  traineeFullName,
+  trainee
 ) => {
   switch (packageType) {
     case PACKAGE_TYPES.NUTRITION_WORKOUT:
@@ -59,8 +60,8 @@ const handlePackageType = async (
         duration,
         traineeFullName
       );
-      await createDietAssessment(trainerId, traineeId);
-      await createWorkoutAssessment(trainerId, traineeId);
+      //await createDietAssessment(trainerId, traineeId);
+      //await createWorkoutAssessment(trainerId, traineeId);
       break;
     case PACKAGE_TYPES.NUTRITION:
       await createPackageModel(
@@ -70,7 +71,14 @@ const handlePackageType = async (
         duration,
         traineeFullName
       );
-      await createDietAssessment(trainerId, traineeId);
+      trainee.dietAssessmentStatus = "Pending";
+      await trainee.save();
+      // await createPackageModel(
+      //   traineeDietAssessmentModel,
+      //   trainerId,
+      //   traineeId
+      // );
+
       break;
     case PACKAGE_TYPES.WORKOUT:
       await createPackageModel(
@@ -80,156 +88,156 @@ const handlePackageType = async (
         duration,
         traineeFullName
       );
-      await createWorkoutAssessment(trainerId, traineeId);
+      //await createWorkoutAssessment(trainerId, traineeId);
       break;
     default:
       console.log("Unknown package type.");
   }
 };
 
-const createDietAssessment = async (trainerId, traineeId) => {
-  const traineeBasicInfo = await traineeBasicInfoModel.findOne({
-    trainee: traineeId,
-  });
+// // const createDietAssessment = async (trainerId, traineeId) => {
+// //   const traineeBasicInfo = await traineeBasicInfoModel.findOne({
+// //     trainee: traineeId,
+// //   });
 
-  if (!traineeBasicInfo) {
-    console.log("Trainee basic info not found.");
-    return;
-  }
+// //   if (!traineeBasicInfo) {
+// //     console.log("Trainee basic info not found.");
+// //     return;
+// //   }
 
-  const { gender, birthDate, weight, height, fitnessGoals, activityLevel } =
-    traineeBasicInfo;
+// //   const { gender, birthDate, weight, height, fitnessGoals, activityLevel } =
+// //     traineeBasicInfo;
 
-  const macros = await calculateMacronutrients(traineeBasicInfo.toObject());
+// //   const macros = await calculateMacronutrients(traineeBasicInfo.toObject());
 
-  const assessmentData = {
-    trainer: trainerId,
-    trainee: traineeId,
-    gender,
-    birthDate,
-    weight,
-    height,
-    fitnessGoals,
-    activityLevel,
-    macros: macros.macros,
-  };
+// //   const AssessmentData = {
+// //     trainer: trainerId,
+// //     trainee: traineeId,
+// //     gender,
+// //     birthDate,
+// //     weight,
+// //     height,
+// //     fitnessGoals,
+// //     activityLevel,
+// //     macros: macros.macros,
+// //   };
 
-  let dietAssessment = await traineeDietAssesmentModel.findOne({
-    trainee: traineeId,
-  });
+// //   let dietAssessment = await traineeDietAssessmentModel.findOne({
+// //     trainee: traineeId,
+// //   });
 
-  if (dietAssessment) {
-    await traineeDietAssesmentModel.findOneAndUpdate(
-      { trainee: traineeId },
-      { $set: assessmentData },
-      { new: true }
-    );
-  } else {
-    dietAssessment = new traineeDietAssesmentModel(assessmentData);
-    await dietAssessment.save();
-  }
-  await traineeModel.findByIdAndUpdate(traineeId, {
-    traineeDietAssesment: dietAssessment._id,
-  });
+// //   if (dietAssessment) {
+// //     await traineeDietAssessmentModel.findOneAndUpdate(
+// //       { trainee: traineeId },
+// //       { $set: AssessmentData },
+// //       { new: true }
+// //     );
+// //   } else {
+// //     dietAssessment = new traineeDietAssessmentModel(AssessmentData);
+// //     await dietAssessment.save();
+// //   }
+// //   await traineeModel.findByIdAndUpdate(traineeId, {
+// //     traineeDietAssessment: dietAssessment._id,
+// //   });
 
-  // const nutritionAssessmentData = {
-  //   trainer: trainerId,
-  //   trainee: traineeId,
-  //   gender,
-  //   birthDate,
-  //   weight,
-  //   height,
-  //   fitnessGoals,
-  //   activityLevel,
-  //   planmacros: macros.macros,
-  // };
+// //   // const nutritionAssessmentData = {
+// //   //   trainer: trainerId,
+// //   //   trainee: traineeId,
+// //   //   gender,
+// //   //   birthDate,
+// //   //   weight,
+// //   //   height,
+// //   //   fitnessGoals,
+// //   //   activityLevel,
+// //   //   planmacros: macros.macros,
+// //   // };
 
-  // let nutritionAssessment = await nutritionModel.findOne({
-  //   trainee: traineeId,
-  // });
+// //   // let nutritionAssessment = await nutritionModel.findOne({
+// //   //   trainee: traineeId,
+// //   // });
 
-  // if (nutritionAssessment) {
-  //   await nutritionModel.findOneAndUpdate(
-  //     { trainee: traineeId },
-  //     { $set: nutritionAssessmentData },
-  //     { new: true }
-  //   );
-  // } else {
-  //   nutritionAssessment = new nutritionModel(nutritionAssessmentData);
-  //   await nutritionAssessment.save();
-  // }
-};
+// //   // if (nutritionAssessment) {
+// //   //   await nutritionModel.findOneAndUpdate(
+// //   //     { trainee: traineeId },
+// //   //     { $set: nutritionAssessmentData },
+// //   //     { new: true }
+// //   //   );
+// //   // } else {
+// //   //   nutritionAssessment = new nutritionModel(nutritionAssessmentData);
+// //   //   await nutritionAssessment.save();
+// //   // }
+// // };
 
-const createWorkoutAssessment = async (trainerId, traineeId) => {};
+// // const createWorkoutAssessment = async (trainerId, traineeId) => {};
 
-const calculateMacronutrients = async (trainee) => {
-  // Macronutrient ratios
-  const proteinRatio = 0.3;
-  const fatRatio = 0.25;
-  const carbRatio = 0.45;
+// const calculateMacronutrients = async (trainee) => {
+//   // Macronutrient ratios
+//   const proteinRatio = 0.3;
+//   const fatRatio = 0.25;
+//   const carbRatio = 0.45;
 
-  const caloriesPerGramProtein = 4;
-  const caloriesPerGramCarb = 4;
-  const caloriesPerGramFat = 9;
-  //console.log("Calculating macronutrients for:", trainee);
-  const birthDate = new Date(trainee.birthDate);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  //console.log("Calculated age:", age);
-  let BMR;
-  if (trainee.gender === "Male") {
-    BMR = 10 * trainee.weight + 6.25 * trainee.height - 5 * age + 5;
-  } else {
-    BMR = 10 * trainee.weight + 6.25 * trainee.height - 5 * age - 161;
-  }
-  //console.log("Calculated BMR:", BMR);
-  const activityFactors = {
-    "Extremely Active": 1.9,
-    "Very Active": 1.725,
-    "Moderate Active": 1.55,
-    "Lightly Active": 1.375,
-    Inactive: 1.2,
-  };
-  let TDEE = BMR * (activityFactors[trainee.activityLevel] || 1);
-  //console.log("TDEE before adjustment:", TDEE);
+//   const caloriesPerGramProtein = 4;
+//   const caloriesPerGramCarb = 4;
+//   const caloriesPerGramFat = 9;
+//   //console.log("Calculating macronutrients for:", trainee);
+//   const birthDate = new Date(trainee.birthDate);
+//   const today = new Date();
+//   let age = today.getFullYear() - birthDate.getFullYear();
+//   const m = today.getMonth() - birthDate.getMonth();
+//   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+//     age--;
+//   }
+//   //console.log("Calculated age:", age);
+//   let BMR;
+//   if (trainee.gender === "Male") {
+//     BMR = 10 * trainee.weight + 6.25 * trainee.height - 5 * age + 5;
+//   } else {
+//     BMR = 10 * trainee.weight + 6.25 * trainee.height - 5 * age - 161;
+//   }
+//   //console.log("Calculated BMR:", BMR);
+//   const activityFactors = {
+//     "Extremely Active": 1.9,
+//     "Very Active": 1.725,
+//     "Moderate Active": 1.55,
+//     "Lightly Active": 1.375,
+//     Inactive: 1.2,
+//   };
+//   let TDEE = BMR * (activityFactors[trainee.activityLevel] || 1);
+//   //console.log("TDEE before adjustment:", TDEE);
 
-  switch (trainee.fitnessGoals) {
-    case "Lose Weight":
-      TDEE -= 300;
-      break;
-    case "Build Muscle":
-      TDEE += 300;
-      break;
-  }
+//   switch (trainee.fitnessGoals) {
+//     case "Lose Weight":
+//       TDEE -= 300;
+//       break;
+//     case "Build Muscle":
+//       TDEE += 300;
+//       break;
+//   }
 
-  if (TDEE < BMR) {
-    TDEE = BMR;
-  }
+//   if (TDEE < BMR) {
+//     TDEE = BMR;
+//   }
 
-  //console.log("Final TDEE:", TDEE);
+//   //console.log("Final TDEE:", TDEE);
 
-  const dailyProtein = (TDEE * proteinRatio) / caloriesPerGramProtein;
-  const dailyFat = (TDEE * fatRatio) / caloriesPerGramFat;
-  const dailyCarbs = (TDEE * carbRatio) / caloriesPerGramCarb;
+//   const dailyProtein = (TDEE * proteinRatio) / caloriesPerGramProtein;
+//   const dailyFat = (TDEE * fatRatio) / caloriesPerGramFat;
+//   const dailyCarbs = (TDEE * carbRatio) / caloriesPerGramCarb;
 
-  // console.log("Macronutrients:", {
-  //   protein: dailyProtein,
-  //   fat: dailyFat,
-  //   carbs: dailyCarbs,
-  // });
-  return {
-    macros: {
-      calories: Math.round(TDEE),
-      proteins: Math.round(dailyProtein),
-      fats: Math.round(dailyFat),
-      carbs: Math.round(dailyCarbs),
-    },
-  };
-};
+//   // console.log("Macronutrients:", {
+//   //   protein: dailyProtein,
+//   //   fat: dailyFat,
+//   //   carbs: dailyCarbs,
+//   // });
+//   return {
+//     macros: {
+//       calories: Math.round(TDEE),
+//       proteins: Math.round(dailyProtein),
+//       fats: Math.round(dailyFat),
+//       carbs: Math.round(dailyCarbs),
+//     },
+//   };
+// };
 
 ////////////////////////////////////////////////////////////////////////
 /////////////////////////
@@ -346,7 +354,8 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
     duration,
     id,
     traineeId,
-    traineeFullName
+    traineeFullName,
+    trainee
   );
   const newSubscription = new SubscriptionModel({
     trainerId: id,
