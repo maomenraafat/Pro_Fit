@@ -180,7 +180,7 @@ const FillDietAssessment = catchAsyncError(async (req, res, next) => {
     trainer: assignedTrainer,
     trainee: traineeId,
     planName: traineeFullName,
-    planmacros: macros.macros,
+    targetmacros: macros.macros,
     status: "Current",
     foodAllergens,
     disease,

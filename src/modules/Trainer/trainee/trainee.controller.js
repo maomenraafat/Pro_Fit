@@ -176,7 +176,7 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await traineeModel
     .findById(id)
-    .select("firstName lastName email profilePhoto");
+    .select("firstName lastName email profilePhoto traineeDietAssessment");
   if (!data) {
     return next(new AppError("Trainee data not found", 404));
   }
@@ -208,10 +208,12 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
 const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
-  const data = await nutritionModel.findOne({
-    trainer: trainerId,
-    trainee: id,
-  });
+  const data = await nutritionModel
+    .findOne({
+      trainer: trainerId,
+      trainee: id,
+    })
+    .populate({ path: "trainee", select: "dietAssessmentStatus" });
   if (!data) {
     return next(new AppError("No nutrition plans found", 404));
   }
