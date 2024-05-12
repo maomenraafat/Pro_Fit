@@ -289,6 +289,7 @@ const selectPackage = catchAsyncError(async (req, res, next) => {
   }
 
   res.status(200).json({
+    success:true,
     data: {
       selectedPackage,
       trainee,
