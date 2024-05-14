@@ -8,8 +8,6 @@ const addReview = catchAsyncError(async (req, res) => {
   const traineeId = req.user.payload.id;
 
   // Check if the trainee has an active subscription with the trainer
-  console.log(trainerId);
-  console.log(traineeId);
   const activeSubscription = await SubscriptionModel.findOne({
     trainerId: trainerId,
     traineeId: traineeId,
