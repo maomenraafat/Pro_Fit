@@ -16,10 +16,8 @@ const addChallenge = catchAsyncError(async (req, res) => {
 
   if (existingChallenge) {
     return res.status(409).json({
-      // 409 Conflict is generally used for duplicate resource conflicts
       success: false,
-      message:
-        "You already have a challenge with this title. Please choose a different title.",
+      message: "You already have a challenge with this title. Please choose a different title.",
     });
   }
 
@@ -37,6 +35,7 @@ const addChallenge = catchAsyncError(async (req, res) => {
   // Create the new challenge if no existing title is found
   const newChallenge = await Challenge.create({
     trainee: traineeId,
+    createdBy: traineeId,  // Save the creator ID
     title: title,
     image: imageUrl,
   });
@@ -47,6 +46,7 @@ const addChallenge = catchAsyncError(async (req, res) => {
     data: { _id: newChallenge._id },
   });
 });
+
 
 // Function to give up/restart a challenge
 const toggleChallengeStatus = catchAsyncError(async (req, res) => {
@@ -212,6 +212,7 @@ const getChallenges = catchAsyncError(async (req, res) => {
     data: formattedChallenges,
   });
 });
+
 
 export {
   addChallenge,

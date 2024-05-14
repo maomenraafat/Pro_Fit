@@ -15,6 +15,15 @@ const challengeSchema = new Schema({
     ref: 'Trainee',
     required: true,
   },
+  trainer: {  
+    type: Schema.ObjectId,
+    ref: 'Trainer',
+    default: null,
+  },
+  createdBy: {
+    type: Schema.ObjectId,
+    required: true,
+  },
   startTime: {
     type: Date,
     required: true,
@@ -24,15 +33,15 @@ const challengeSchema = new Schema({
     type: Date,
     default: null,
   },
-  timeElapsed: { // Total active time accumulated across all active periods
+  timeElapsed: { 
     type: Number,
     default: 0,
   },
-  finalTimeElapsed: { // Recorded at the time of giving up; used for the last active period calculation
+  finalTimeElapsed: { 
     type: Number,
     default: 0,
   },
-  history: [{ // Optional: to keep track of each start and stop if multiple toggles are allowed
+  history: [{
     start: Date,
     end: Date,
   }]
