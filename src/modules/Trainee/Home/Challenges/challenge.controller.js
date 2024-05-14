@@ -11,13 +11,15 @@ const addChallenge = catchAsyncError(async (req, res) => {
   // Check if a challenge with the same title already exists for this trainee
   const existingChallenge = await Challenge.findOne({
     trainee: traineeId,
-    title: title
+    title: title,
   });
 
   if (existingChallenge) {
-    return res.status(409).json({ // 409 Conflict is generally used for duplicate resource conflicts
+    return res.status(409).json({
+      // 409 Conflict is generally used for duplicate resource conflicts
       success: false,
-      message: "You already have a challenge with this title. Please choose a different title."
+      message:
+        "You already have a challenge with this title. Please choose a different title.",
     });
   }
 
@@ -36,16 +38,15 @@ const addChallenge = catchAsyncError(async (req, res) => {
   const newChallenge = await Challenge.create({
     trainee: traineeId,
     title: title,
-    image: imageUrl
+    image: imageUrl,
   });
 
   res.status(201).json({
     success: true,
     message: "Challenge added successfully.",
-    data: {_id:newChallenge._id}  ,
+    data: { _id: newChallenge._id },
   });
 });
-
 
 // Function to give up/restart a challenge
 const toggleChallengeStatus = catchAsyncError(async (req, res) => {
@@ -61,7 +62,8 @@ const toggleChallengeStatus = catchAsyncError(async (req, res) => {
   if (!challenge) {
     return res.status(404).json({
       success: false,
-      message: "Challenge not found or you do not have permission to access this challenge.",
+      message:
+        "Challenge not found or you do not have permission to access this challenge.",
     });
   }
 
@@ -69,7 +71,8 @@ const toggleChallengeStatus = catchAsyncError(async (req, res) => {
   if (!challenge.endTime) {
     // No endTime means the challenge is active; we need to give it up
     const endTime = new Date();
-    const timeElapsed = (endTime.getTime() - challenge.startTime.getTime()) / 1000;
+    const timeElapsed =
+      (endTime.getTime() - challenge.startTime.getTime()) / 1000;
 
     const updatedChallenge = await Challenge.findByIdAndUpdate(
       challengeId,
@@ -82,15 +85,19 @@ const toggleChallengeStatus = catchAsyncError(async (req, res) => {
       message: "Successfully gave up on challenge.",
       data: {
         // ...updatedChallenge.toObject(),
-        _id:updatedChallenge._id,
-        formattedTimeElapsed: "00 d : 00 h : 00 m : 00 s"
-      }
+        _id: updatedChallenge._id,
+        formattedTimeElapsed: "00 d : 00 h : 00 m : 00 s",
+      },
     });
   } else {
     // endTime is present, so the challenge has been given up; we need to restart it
     await Challenge.findByIdAndUpdate(
       challengeId,
-      { startTime: new Date(), endTime: null, $inc: { timeElapsed: challenge.finalTimeElapsed } },
+      {
+        startTime: new Date(),
+        endTime: null,
+        $inc: { timeElapsed: challenge.finalTimeElapsed },
+      },
       { new: true }
     );
 
@@ -100,8 +107,6 @@ const toggleChallengeStatus = catchAsyncError(async (req, res) => {
     });
   }
 });
-
-
 
 // Function to update an existing challenge
 const updateChallenge = catchAsyncError(async (req, res) => {
@@ -129,7 +134,8 @@ const updateChallenge = catchAsyncError(async (req, res) => {
   if (!challenge) {
     return res.status(404).json({
       success: false,
-      message: "Challenge not found or you do not have permission to update this challenge.",
+      message:
+        "Challenge not found or you do not have permission to update this challenge.",
     });
   }
 
@@ -146,7 +152,6 @@ const updateChallenge = catchAsyncError(async (req, res) => {
     data: updatedChallenge,
   });
 });
-
 
 // Delete a challenge
 const deleteChallenge = catchAsyncError(async (req, res) => {
@@ -178,15 +183,18 @@ const getChallenges = catchAsyncError(async (req, res) => {
   const challenges = await Challenge.find({ trainee: traineeId });
   const currentTime = new Date();
 
-  const formattedChallenges = challenges.map(challenge => {
+  const formattedChallenges = challenges.map((challenge) => {
     let formattedTimeElapsed;
     if (challenge.endTime) {
       // Show zeroed time if given up
       formattedTimeElapsed = "00 d : 00 h : 00 m : 00 s";
     } else {
       // Calculate ongoing time
-      const additionalTime = (currentTime.getTime() - challenge.startTime.getTime()) / 1000;
-      formattedTimeElapsed = formatDuration(challenge.timeElapsed + additionalTime);
+      const additionalTime =
+        (currentTime.getTime() - challenge.startTime.getTime()) / 1000;
+      formattedTimeElapsed = formatDuration(
+        challenge.timeElapsed + additionalTime
+      );
     }
 
     // Return only the specified fields
@@ -194,7 +202,7 @@ const getChallenges = catchAsyncError(async (req, res) => {
       _id: challenge._id,
       title: challenge.title,
       image: challenge.image,
-      formattedTimeElapsed
+      formattedTimeElapsed,
     };
   });
 
@@ -204,12 +212,6 @@ const getChallenges = catchAsyncError(async (req, res) => {
     data: formattedChallenges,
   });
 });
-
-
-
-
-
-
 
 export {
   addChallenge,

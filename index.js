@@ -58,7 +58,6 @@ app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
 app.use("/api/v1/trainees/steps", tranieeRecordSteps);
 app.use("/api/v1/trainees/water", traineeWaterIntake);
 app.use("/api/v1/trainees/steps", tranieeRecordSteps);
-app.use("/api/v1/trainees/water", traineeWaterIntake);
 app.use("/api/v1/trainees/challenge", traineeChallengeRouter);
 app.use("/api/v1/trainees/sleeping-track", traineesleepingTrack);
 app.use("/api/v1/trainees/subscription", SubscriptionRouter);
