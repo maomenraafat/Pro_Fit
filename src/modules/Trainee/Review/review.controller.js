@@ -1,10 +1,26 @@
 import { reviewModel } from "../../../../Database/models/review.model.js";
+import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
 
 const addReview = catchAsyncError(async (req, res) => {
   const { trainerId } = req.params;
   const { rating, comment } = req.body;
   const traineeId = req.user.payload.id;
+
+  // Check if the trainee has an active subscription with the trainer
+  const activeSubscription = await SubscriptionModel.findOne({
+    trainerId: trainerId,
+    traineeId: traineeId,
+    status: "Active",
+  });
+  console.log(activeSubscription);
+
+  if (!activeSubscription) {
+    return res.status(403).json({
+      success: false,
+      message: "You can only review trainers you have subscribed to.",
+    });
+  }
 
   // Check if the trainee has already reviewed this trainer
   const existingReview = await reviewModel.findOne({
@@ -36,7 +52,7 @@ const addReview = catchAsyncError(async (req, res) => {
 
 const getReviews = catchAsyncError(async (req, res) => {
   const { trainerId } = req.params;
-  const traineeId = req.user.payload.id; // Assuming you can access the trainee's ID from the request
+  const traineeId = req.user.payload.id; 
 
   // Update the populate method to include the profilePhoto
   const reviews = await reviewModel
@@ -95,7 +111,6 @@ const getReviews = catchAsyncError(async (req, res) => {
     },
   });
 });
-
 
 const getSpecificReview = catchAsyncError(async (req, res) => {
   const { trainerId } = req.params;

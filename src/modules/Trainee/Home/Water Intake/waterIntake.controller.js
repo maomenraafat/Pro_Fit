@@ -159,10 +159,114 @@ const resetIntake = catchAsyncError(async (req, res) => {
 });
 
 
+//For Trainer
+const updateTraineeWaterGoal = catchAsyncError(async (req, res) => {
+    const traineeId = req.params.traineeId; 
+    const trainerId = req.user.payload.id;   
+    const { waterGoal } = req.body;
+
+    if (!waterGoal || waterGoal <= 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid water goal. It must be a positive number.",
+        });
+    }
+
+    const trainee = await traineeModel.findById(traineeId);
+    if (!trainee) {
+        return res.status(404).json({
+            success: false,
+            message: "Trainee not found.",
+        });
+    }
+
+    // Check if the trainee has an assigned trainer
+    if (!trainee.assignedTrainer) {
+        return res.status(403).json({
+            success: false,
+            message: "Trainee does not have an assigned trainer.",
+        });
+    }
+
+    // Check if the trainer making the request is assigned to the trainee
+    if (trainee.assignedTrainer.toString() !== trainerId) {
+        return res.status(403).json({
+            success: false,
+            message: "You are not authorized to update the water goal for this trainee.",
+        });
+    }
+
+    trainee.waterGoal = waterGoal;
+    await trainee.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Water goal updated successfully.",
+        data: waterGoal 
+    });
+});
+
+
+const getTraineeWaterIntakeForTrainer = catchAsyncError(async (req, res) => {
+    const { traineeId } = req.params;  // Get traineeId from params
+    const trainerId = req.user.payload.id;  // Get trainerId from token payload
+
+    // Find the trainee
+    const trainee = await traineeModel.findById(traineeId);
+    if (!trainee) {
+        return res.status(404).json({
+            success: false,
+            message: "Trainee not found.",
+        });
+    }
+
+    // Check if the trainee has an assigned trainer
+    if (!trainee.assignedTrainer) {
+        return res.status(403).json({
+            success: false,
+            message: "Trainee does not have an assigned trainer.",
+        });
+    }
+
+    // Check if the trainer making the request is assigned to the trainee
+    if (trainee.assignedTrainer.toString() !== trainerId) {
+        return res.status(403).json({
+            success: false,
+            message: "You are not authorized to view the water intake details for this trainee.",
+        });
+    }
+
+    const date = new Date();
+    date.setUTCHours(0, 0, 0, 0);
+
+    // Find today's water intake record for the trainee
+    const todayRecord = await WaterRecord.findOne({
+        trainee: traineeId,
+        date
+    }) || { intake: 0 };
+
+    const waterGoal = trainee.waterGoal;
+    const percentageComplete = parseInt(((todayRecord.intake / waterGoal) * 100).toFixed(2));
+
+    res.status(200).json({
+        success: true,
+        message: "Today's water intake fetched successfully.",
+        data: {
+            intake: todayRecord.intake,
+            goal: waterGoal,
+            percentageComplete
+        }
+    });
+});
+
+
+
 export{
     setWaterGoal,
     recordWaterIntake,
     getTodayWaterIntake,
     fillAll,
-    resetIntake
+    resetIntake,
+    updateTraineeWaterGoal,
+    getTraineeWaterIntakeForTrainer
 }
