@@ -8,7 +8,7 @@ import {
 } from "../../../middlewares/authToken.js";
 
 DietAssessmentRouter.get(
-  "/DiestAssessments",
+  "/DietAssessments",
   verifyToken,
   allowedTo("trainee"),
   DietAssessment.getDietAssessments
