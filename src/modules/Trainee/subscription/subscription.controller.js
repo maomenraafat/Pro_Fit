@@ -246,6 +246,7 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await PackageModel.find({
     trainerId: id,
+    active: true,
   }).select("packageName price description duration packageType");
   if (!data) {
     return next(new AppError("data not found", 404));
@@ -279,17 +280,23 @@ const selectPackage = catchAsyncError(async (req, res, next) => {
     { $addToSet: { traineeIds: traineeId } },
     { new: true, runValidators: true }
   );
-  const trainee = await traineeModel.findById(traineeId).populate("package");
+  // const traineepackage = await traineeModel
+  //   .findById(traineeId)
+  //   .populate("package");
+  const trainee = await traineeModel.findByIdAndUpdate(traineeId, {
+    package: packageId,
+    assignedTrainer: selectedPackage.trainerId,
+  });
 
-  trainee.package = packageId;
-  trainee.assignedTrainer = selectedPackage.trainerId;
+  //trainee.package = packageId;
+  //trainee.assignedTrainer = selectedPackage.trainerId;
   await trainee.save();
   if (!selectedPackage) {
     return next(new AppError("Error updating package with trainee", 500));
   }
 
   res.status(200).json({
-    success:true,
+    success: true,
     data: {
       selectedPackage,
       trainee,

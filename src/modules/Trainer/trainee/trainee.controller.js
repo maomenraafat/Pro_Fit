@@ -175,7 +175,7 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await traineeModel
     .findById(id)
-    .select("firstName lastName email profilePhoto traineeDietAssessment");
+    .select("firstName lastName email profilePhoto ");
   if (!data) {
     return next(new AppError("Trainee data not found", 404));
   }
@@ -191,7 +191,7 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
       match: { status: "Current" },
     });
   }
-
+  console.log(data);
   if (!data.traineeDietAssessment) {
     return next(
       new AppError("No current diet assessment found for this trainee.", 404)
