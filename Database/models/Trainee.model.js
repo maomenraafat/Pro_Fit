@@ -164,9 +164,10 @@ traineeSchema.methods.setCurrentDietAssessment = async function () {
     this.traineeDietAssessment = currentAssessment._id;
     await this.save();
     return this.traineeDietAssessment;
-  } else {
-    throw new Error("No current diet assessment found for this trainee.");
   }
+  //else {
+  //   throw new Error("No current diet assessment found for this trainee.");
+  // }
 };
 
 export const traineeModel = model("Trainee", traineeSchema);

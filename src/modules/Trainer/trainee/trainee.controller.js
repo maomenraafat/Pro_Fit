@@ -191,12 +191,12 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
       match: { status: "Current" },
     });
   }
-  console.log(data);
-  if (!data.traineeDietAssessment) {
-    return next(
-      new AppError("No current diet assessment found for this trainee.", 404)
-    );
-  }
+  // console.log(data);
+  // // if (!data.traineeDietAssessment) {
+  // //   return next(
+  // //     new AppError("No current diet assessment found for this trainee.", 404)
+  // //   );
+  // // }
 
   res.status(200).json({
     status: "success",
