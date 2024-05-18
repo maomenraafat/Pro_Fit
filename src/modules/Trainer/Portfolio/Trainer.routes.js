@@ -61,6 +61,12 @@ trainerRoutes.patch(
   Trainer.updateTrainerAbout
 );
 trainerRoutes.get(
+  "/AllReviews",
+  verifyToken,
+  allowedTo("trainer"),
+  Trainer.getAllReviews
+);
+trainerRoutes.get(
   "/AllSubscriptions",
   verifyToken,
   allowedTo("trainer"),
