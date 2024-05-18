@@ -13,6 +13,8 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     daymacros,
     planmacros,
     daysCount,
+    goal,
+    dietType,
   } = req.body;
 
   const data = new nutritionModel({
@@ -24,6 +26,8 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     daymacros,
     planmacros,
     daysCount,
+    goal,
+    dietType,
   });
 
   await data.save();

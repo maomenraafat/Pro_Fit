@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import * as dotenv from "dotenv";
 import { traineeModel } from "../../Database/models/Trainee.model.js";
 import { SubscriptionModel } from "../../Database/models/subscription.model.js";
+import { catchAsyncError } from "../utils/catchAsyncError.js";
 dotenv.config();
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -118,7 +119,7 @@ const checkIfAlreadySubscribed = async (req, res, next) => {
 
     const activeSubscription = await SubscriptionModel.findOne({
       traineeId: traineeId,
-      trainerId: trainerId,
+      // trainerId: trainerId,
       status: "Active",
       endDate: { $gte: new Date() },
     });

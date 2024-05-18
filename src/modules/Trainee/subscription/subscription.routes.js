@@ -23,14 +23,14 @@ SubscriptionRouter.patch(
   "/selectPackage/:id",
   verifyToken,
   allowedTo("trainee"),
-  /* checkIfAlreadySubscribed,*/
+  checkIfAlreadySubscribed,
   Subscription.selectPackage
 );
 SubscriptionRouter.post(
   "/subscribe/:id",
   verifyToken,
   allowedTo("trainee"),
-  /*checkIfAlreadySubscribed,*/
+  checkIfAlreadySubscribed,
   Subscription.subscribeWithTrainer
 );
 
