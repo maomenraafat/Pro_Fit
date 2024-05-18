@@ -157,7 +157,7 @@ const getDietAssessmentsData = catchAsyncError(async (req, res, next) => {
     ],
     numberofmeals: [1, 2, 3, 4, 5, 6, 7],
   };
-  res.json(data);
+  res.status(200).json({ success: true, data });
 });
 
 const getDietAssessments = catchAsyncError(async (req, res, next) => {
