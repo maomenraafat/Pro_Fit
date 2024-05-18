@@ -33,5 +33,11 @@ SubscriptionRouter.post(
   checkIfAlreadySubscribed,
   Subscription.subscribeWithTrainer
 );
+SubscriptionRouter.post(
+  "/cancelSubscription",
+  verifyToken,
+  allowedTo("trainee"),
+  Subscription.cancelSubscription
+);
 
 export default SubscriptionRouter;

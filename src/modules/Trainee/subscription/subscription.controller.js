@@ -381,9 +381,57 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const cancelSubscription = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
+  const trainee = await traineeModel
+    .findById(traineeId)
+    .populate("assignedTrainer package");
+
+  if (!trainee) {
+    return next(new AppError("Trainee not found", 404));
+  }
+
+  const { package: packageId, assignedTrainer: trainerId } = trainee;
+  const selectedPackage = await PackageModel.findById(packageId);
+
+  if (selectedPackage) {
+    selectedPackage.traineeIds = selectedPackage.traineeIds.filter(
+      (id) => id.toString() !== traineeId
+    );
+    await selectedPackage.save();
+  }
+
+  trainee.status = "non-subscriber";
+  trainee.assignedTrainer = null;
+  trainee.package = null;
+  trainee.dietAssessmentStatus = "Not Allowed";
+  trainee.workoutAssessmentStatus = "Not Allowed";
+  await trainee.save();
+
+  await traineeDietAssessmentModel.findOneAndUpdate(
+    { trainee: traineeId, status: "Current" },
+    { status: "Archived" }
+  );
+  await traineeWorkoutAssessmentModel.findOneAndUpdate(
+    { trainee: traineeId, status: "Current" },
+    { status: "Archived" }
+  );
+
+  await SubscriptionModel.findOneAndUpdate(
+    { traineeId, trainerId, package: packageId, status: "Active" },
+    { status: "Canceled" }
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Subscription canceled ",
+  });
+});
+
 export {
   selectPackage,
   getTrainerpackages,
   getTrainerAndPackageDetails,
   subscribeWithTrainer,
+  cancelSubscription,
 };
