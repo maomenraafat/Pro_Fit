@@ -72,6 +72,109 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
     data: subscriptions,
   });
 });
+// const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
+//   const trainerId = req.user.payload.id;
+//   let baseQuery = SubscriptionModel.find({
+//     trainerId,
+//   })
+//     .populate({
+//       path: "traineeId",
+//       select: "firstName lastName email profilePhoto dietAssessmentStatus ",
+//     })
+//     .populate({
+//       path: "package",
+//       select: "packageName packageType",
+//     });
+
+//   let apiFeatures = new ApiFeatures(baseQuery, req.query)
+//     .sort()
+//     .search()
+//     .filter()
+//     .paginate()
+//     .fields();
+
+//   let subscriptions = await apiFeatures.mongooseQuery;
+//   if (!subscriptions || subscriptions.length === 0) {
+//     return res.status(200).json({
+//       success: true,
+//       totalDocuments: 0,
+//       totalPages: 0,
+//       page: apiFeatures.page,
+//       limit: apiFeatures.limit,
+//       message: "No trainees found",
+//       data: [],
+//     });
+//   }
+//   subscriptions = subscriptions.filter(
+//     (subscription) => subscription.traineeId.dietAssessmentStatus === "Ready"
+//   );
+
+//   const updateOperations = subscriptions.map(async (subscription) => {
+//     try {
+//       const trainee = subscription.traineeId;
+//       if (trainee && typeof trainee.setCurrentDietAssessment === "function") {
+//         await trainee.setCurrentDietAssessment();
+//       }
+//     } catch (error) {
+//       console.error("Error updating diet assessment for trainee:", error);
+//     }
+//   });
+
+//   await Promise.all(updateOperations);
+//   await SubscriptionModel.populate(subscriptions, {
+//     path: "traineeId.traineeDietAssessment",
+//     select: "createdAt",
+//   });
+
+//   let totalCount = await SubscriptionModel.countDocuments(
+//     apiFeatures.mongooseQuery.getQuery()
+//   );
+//   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+//   console.log(
+//     "Subscriptions before sorting:",
+//     subscriptions.map((sub) => ({
+//       traineeStatus: sub.traineeId.traineeDietAssessment?.dietAssessmentStatus,
+//       createdAt: sub.traineeId.traineeDietAssessment?.createdAt,
+//     }))
+//   );
+
+//   subscriptions.sort((a, b) => {
+//     const aStatus =
+//       a.traineeId.traineeDietAssessment?.dietAssessmentStatus || "Not Ready";
+//     const bStatus =
+//       b.traineeId.traineeDietAssessment?.dietAssessmentStatus || "Not Ready";
+//     const aDate = a.traineeId.traineeDietAssessment?.createdAt || new Date(0);
+//     const bDate = b.traineeId.traineeDietAssessment?.createdAt || new Date(0);
+
+//     if (aStatus === "Ready" && bStatus !== "Ready") {
+//       return -1;
+//     } else if (aStatus !== "Ready" && bStatus === "Ready") {
+//       return 1;
+//     }
+
+//     return new Date(aDate) - new Date(bDate);
+//   });
+
+//   console.log(
+//     "Subscriptions after sorting:",
+//     subscriptions.map((sub) => ({
+//       traineeStatus: sub.traineeId.traineeDietAssessment?.dietAssessmentStatus,
+//       createdAt: sub.traineeId.traineeDietAssessment?.createdAt,
+//     }))
+//   );
+
+//   res.status(200).json({
+//     success: true,
+//     totalDocuments: totalCount,
+//     totalPages: totalPages,
+//     page: apiFeatures.page,
+//     limit: apiFeatures.limit,
+//     message: "Trainees retrieved successfully",
+//     data: subscriptions,
+//   });
+// });
+
 const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   let baseQuery = SubscriptionModel.find({
@@ -79,7 +182,7 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
   })
     .populate({
       path: "traineeId",
-      select: "firstName lastName email profilePhoto dietAssessmentStatus  ",
+      select: "firstName lastName email profilePhoto dietAssessmentStatus",
     })
     .populate({
       path: "package",
@@ -94,6 +197,7 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     .fields();
 
   let subscriptions = await apiFeatures.mongooseQuery;
+
   if (!subscriptions || subscriptions.length === 0) {
     return res.status(200).json({
       success: true,
@@ -105,6 +209,13 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
       data: [],
     });
   }
+
+  subscriptions = subscriptions.filter(
+    (subscription) => subscription.traineeId.dietAssessmentStatus === "Ready"
+  );
+
+  const totalCount = subscriptions.length;
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
   const updateOperations = subscriptions.map(async (subscription) => {
     try {
@@ -118,15 +229,11 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
   });
 
   await Promise.all(updateOperations);
+
   await SubscriptionModel.populate(subscriptions, {
     path: "traineeId.traineeDietAssessment",
     select: "createdAt",
   });
-
-  let totalCount = await SubscriptionModel.countDocuments(
-    apiFeatures.mongooseQuery.getQuery()
-  );
-  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
   console.log(
     "Subscriptions before sorting:",
@@ -171,6 +278,7 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     data: subscriptions,
   });
 });
+
 const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await traineeModel
