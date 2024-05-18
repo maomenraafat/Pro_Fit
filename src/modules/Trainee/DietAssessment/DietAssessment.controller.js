@@ -83,6 +83,82 @@ const calculateMacronutrients = async (trainee) => {
     },
   };
 };
+
+const getDietAssessmentsData = catchAsyncError(async (req, res, next) => {
+  const data = {
+    fitnessGoals: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
+    activityLevel: [
+      "Extremely Active",
+      "Very Active",
+      "Moderate Active",
+      "Lightly Active",
+      "Inactive",
+    ],
+    foodAllergens: [
+      "Milk",
+      "Eggs",
+      "Fish",
+      "Shellfish",
+      "Tree Nuts",
+      "Peanuts",
+      "Wheat",
+      "Soybeans",
+      "Corn",
+      "Gelatin",
+      "Beef",
+      "Chicken",
+      "Mutton",
+      "Sesame",
+      "Sunflower",
+      "Poppy",
+      "Citrus",
+      "Strawberries",
+      "Bananas",
+      "Garlic",
+      "Onions",
+      "Coriander",
+      "Mustard",
+      "Oats",
+      "Rye",
+    ],
+    disease: [
+      "Diabetes Type 1",
+      "Diabetes Type 2",
+      "Celiac Disease",
+      "Irritable Bowel Syndrome",
+      "Lactose Intolerance",
+      "Hypertension",
+      "Hyperlipidemia",
+      "Gout",
+      "Osteoporosis",
+      "Kidney Disease",
+      "Heart Disease",
+      "Gastroesophageal Reflux Disease",
+      "Obesity",
+      "Anemia",
+      "Polycystic Ovary Syndrome",
+      "Thyroid Disorders",
+    ],
+    religionRestriction: [
+      "alcohol",
+      "pork",
+      "carrion",
+      "Beef",
+      "meat products",
+    ],
+    dietType: [
+      "Vegetarian",
+      "Vegan",
+      "Ketogenic",
+      "Paleo",
+      "Mediterranean",
+      "Standard",
+      "Other",
+    ],
+  };
+  res.json(data);
+});
+
 const getDietAssessments = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
   const data = await traineeDietAssessmentModel.findOne({ trainee: traineeId });
@@ -202,4 +278,4 @@ const FillDietAssessment = catchAsyncError(async (req, res, next) => {
   });
 });
 
-export { getDietAssessments, FillDietAssessment };
+export { getDietAssessments, FillDietAssessment, getDietAssessmentsData };
