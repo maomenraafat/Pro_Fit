@@ -7,6 +7,85 @@ import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 import bcrypt from "bcrypt";
 import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
 
+const calculateMacronutrients = async (trainee) => {
+  if (
+    !trainee ||
+    !trainee.weight ||
+    !trainee.height ||
+    !trainee.birthDate ||
+    !trainee.gender
+  ) {
+    console.error("Invalid trainee data provided:", trainee);
+    return { macros: { calories: 0, proteins: 0, fats: 0, carbs: 0 } }; // Return zero macros if data is incomplete
+  }
+  // Macronutrient ratios
+  const proteinRatio = 0.3;
+  const fatRatio = 0.25;
+  const carbRatio = 0.45;
+
+  const caloriesPerGramProtein = 4;
+  const caloriesPerGramCarb = 4;
+  const caloriesPerGramFat = 9;
+  //console.log("Calculating macronutrients for:", trainee);
+  const birthDate = new Date(trainee.birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  //console.log("Calculated age:", age);
+  let BMR;
+  if (trainee.gender === "Male") {
+    BMR = 10 * trainee.weight + 6.25 * trainee.height - 5 * age + 5;
+  } else {
+    BMR = 10 * trainee.weight + 6.25 * trainee.height - 5 * age - 161;
+  }
+  //console.log("Calculated BMR:", BMR);
+  const activityFactors = {
+    "Extremely Active": 1.9,
+    "Very Active": 1.725,
+    "Moderate Active": 1.55,
+    "Lightly Active": 1.375,
+    Inactive: 1.2,
+  };
+  let TDEE = BMR * (activityFactors[trainee.activityLevel] || 1);
+  //console.log("TDEE before adjustment:", TDEE);
+
+  switch (trainee.fitnessGoals) {
+    case "Lose Weight":
+      TDEE -= 300;
+      break;
+    case "Build Muscle":
+      TDEE += 300;
+      break;
+  }
+
+  if (TDEE < BMR) {
+    TDEE = BMR;
+  }
+
+  //console.log("Final TDEE:", TDEE);
+
+  const dailyProtein = (TDEE * proteinRatio) / caloriesPerGramProtein;
+  const dailyFat = (TDEE * fatRatio) / caloriesPerGramFat;
+  const dailyCarbs = (TDEE * carbRatio) / caloriesPerGramCarb;
+
+  // console.log("Macronutrients:", {
+  //   protein: dailyProtein,
+  //   fat: dailyFat,
+  //   carbs: dailyCarbs,
+  // });
+  return {
+    macros: {
+      calories: Math.round(TDEE),
+      proteins: Math.round(dailyProtein),
+      fats: Math.round(dailyFat),
+      carbs: Math.round(dailyCarbs),
+    },
+  };
+};
+
 const tranieeSignUp = catchAsyncError(async (req, res, next) => {
   const { firstName, lastName, email, password, phoneNumber } = req.body;
   // Check if the email already exists in the database
@@ -165,7 +244,14 @@ const basicInformation = catchAsyncError(async (req, res, next) => {
   const tranieeId = req.user.payload.id;
 
   // console.log(tranieeId);
-
+  const macros = await calculateMacronutrients({
+    gender,
+    birthDate,
+    weight,
+    height,
+    fitnessGoals,
+    activityLevel,
+  });
   const tranieeBasicInfo = new traineeBasicInfoModel({
     trainee: tranieeId,
     gender,
@@ -174,6 +260,7 @@ const basicInformation = catchAsyncError(async (req, res, next) => {
     height,
     fitnessGoals,
     activityLevel,
+    dailymacros: macros,
   });
 
   await tranieeBasicInfo.save();
