@@ -260,7 +260,7 @@ const basicInformation = catchAsyncError(async (req, res, next) => {
     height,
     fitnessGoals,
     activityLevel,
-    dailymacros: macros,
+    dailymacros: macros.macros,
   });
 
   await tranieeBasicInfo.save();
