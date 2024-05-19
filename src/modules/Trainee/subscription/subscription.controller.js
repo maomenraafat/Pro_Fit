@@ -73,6 +73,11 @@ const handlePackageType = async (
       );
       trainee.dietAssessmentStatus = "Pending";
       await trainee.save();
+      const existingPlan = await nutritionModel.updateMany(
+        { trainee: traineeId, status: "Current" },
+        { status: "Archived" },
+        { new: true }
+      );
       // await createPackageModel(
       //   traineeDietAssessmentModel,
       //   trainerId,
@@ -412,6 +417,14 @@ const cancelSubscription = catchAsyncError(async (req, res, next) => {
     { trainee: traineeId, status: "Current" },
     { status: "Archived" }
   );
+  // await nutritionModel.findOneAndUpdate(
+  //   { trainee: traineeId, status: "Current" },
+  //   { status: "Last" }
+  // );
+  // await WorkoutModel.findOneAndUpdate(
+  //   { trainee: traineeId, status: "Current" },
+  //   { status: "Last" }
+  // );
   await traineeWorkoutAssessmentModel.findOneAndUpdate(
     { trainee: traineeId, status: "Current" },
     { status: "Archived" }
