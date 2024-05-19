@@ -316,7 +316,7 @@ const getTrainerAndPackageDetails = catchAsyncError(async (req, res, next) => {
     .select("assignedTrainer package")
     .populate({
       path: "package",
-      select: "packageType duration -_id",
+      select: "packageType duration -_id price ",
     })
     .populate({
       path: "assignedTrainer",
@@ -344,6 +344,7 @@ const getTrainerAndPackageDetails = catchAsyncError(async (req, res, next) => {
       trainerName: trainerFullName,
       profilePhoto,
       SubscriptionType: packageType,
+      paidAmount: trainee.package.price,
       Duration: formattedDuration,
       startDate: startDate.toLocaleDateString("en-US", dateOptions),
       endDate: endDate.toLocaleDateString("en-US", dateOptions),
