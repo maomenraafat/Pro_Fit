@@ -322,9 +322,12 @@ const getTrainerAndPackageDetails = catchAsyncError(async (req, res, next) => {
       path: "assignedTrainer",
       select: "firstName lastName profilePhoto -_id",
     });
-  // if (!trainee || !trainee.assignedTrainer || !trainee.package) {
-  //   return next(new AppError("Details not found for this trainee", 404));
-  // }
+  if (!trainee || !trainee.assignedTrainer || !trainee.package) {
+    res.status(200).json({
+      success: true,
+      data: null,
+    });
+  }
 
   const trainerFullName = `${trainee.assignedTrainer.firstName} ${trainee.assignedTrainer.lastName}`;
   const { profilePhoto } = trainee.assignedTrainer;
