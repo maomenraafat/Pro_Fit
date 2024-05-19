@@ -86,6 +86,7 @@ const calculateMacronutrients = async (trainee) => {
 
 const getDietAssessmentsData = catchAsyncError(async (req, res, next) => {
   const data = {
+    gender: ["Male", "Female"],
     fitnessGoals: ["Lose Weight", "Build Muscle", "Healthy Lifestyle"],
     activityLevel: [
       "Extremely Active",
