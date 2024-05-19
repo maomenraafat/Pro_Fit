@@ -283,7 +283,9 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await traineeModel
     .findById(id)
-    .select("firstName lastName email profilePhoto ");
+    .select(
+      "firstName lastName email profilePhoto phoneNumber dietAssessmentStatus"
+    );
   if (!data) {
     return next(new AppError("Trainee data not found", 404));
   }
