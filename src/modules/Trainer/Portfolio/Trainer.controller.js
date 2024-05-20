@@ -322,12 +322,15 @@ const getAllReviews = catchAsyncError(async (req, res) => {
     .map((review) => ({
       rating: review.rating,
       comment: review.comment,
-      date: review.createdAt.toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      traineeName: `${review.trainee.firstName} ${review.trainee.lastName}`,
+      date: review.createdAt,
+      // date: review.createdAt.toLocaleDateString("en-US", {
+      //   day: "numeric",
+      //   month: "long",
+      //   year: "numeric",
+      // }),
+      firstName: review.trainee.firstName,
+      lastName: review.trainee.lastName,
+      // traineeName: `${review.trainee.firstName} ${review.trainee.lastName}`,
       profilePhoto: review.trainee.profilePhoto,
       isCurrentUser: review.trainee._id.toString() === traineeId,
     }))
