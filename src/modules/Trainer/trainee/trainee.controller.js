@@ -378,7 +378,11 @@ const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
       trainee: id,
       status: "Current",
     })
-    .populate({ path: "trainee", select: "dietAssessmentStatus" });
+    .populate({
+      path: "trainee",
+      select:
+        " firstName  lastName email profilePhoto phoneNumber  dietAssessmentStatus",
+    });
   if (!data) {
     return next(new AppError("No nutrition plans found", 404));
   }
