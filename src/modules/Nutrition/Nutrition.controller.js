@@ -15,6 +15,7 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     daysCount,
     goal,
     dietType,
+    numberOfWeeks,
   } = req.body;
 
   const data = new nutritionModel({
@@ -28,6 +29,7 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     daysCount,
     goal,
     dietType,
+    numberOfWeeks,
   });
 
   await data.save();
@@ -122,6 +124,23 @@ const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   });
 });
 
+// const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
+//   const id = req.params.id;
+//   const data = await nutritionModel
+//     .findById(id)
+//     .select(
+//       "planName description days plantype daymacros planmacros daysCount"
+//     );
+//   if (!data) {
+//     return next(new AppError("No nutrition plan found with that ID", 404));
+//   }
+
+//   res.status(200).json({
+//     status: "success",
+//     data,
+//   });
+// });
+
 const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await nutritionModel
@@ -129,13 +148,20 @@ const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
     .select(
       "planName description days plantype daymacros planmacros daysCount"
     );
+
   if (!data) {
     return next(new AppError("No nutrition plan found with that ID", 404));
   }
 
+  // Extract only the first 7 days
+  const first7Days = data.days.slice(0, 7);
+
   res.status(200).json({
     status: "success",
-    data,
+    data: {
+      ...data.toObject(),
+      days: first7Days,
+    },
   });
 });
 
