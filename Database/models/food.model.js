@@ -65,7 +65,7 @@ const foodSchema = new Schema(
       ],
     },
     dietType: {
-      type: String,
+      type: [String],
       enum: [
         "Vegetarian",
         "Vegan",
@@ -78,12 +78,12 @@ const foodSchema = new Schema(
       required: false,
     },
     mealtype: {
-      type: String,
+      type: [String],
       enum: ["Breackfast", "Lunch", "Snack", "Dinner"],
       required: false,
     },
     foodAllergens: {
-      type: String,
+      type: [String],
       enum: [
         "Milk",
         "Eggs",
@@ -112,8 +112,9 @@ const foodSchema = new Schema(
         "Rye",
       ],
     },
+
     diseaseCompatibility: {
-      type: String,
+      type: [String],
       enum: [
         "Diabetes",
         "Hypertension",
@@ -135,10 +136,12 @@ const foodSchema = new Schema(
         "Salmonella infection",
       ],
     },
+
     religionrestriction: {
-      type: String,
+      type: [String],
       enum: ["Alcohol", "Pork", "Carrion", "Beef", " Meat Products", "Chicken"],
     },
+
     Trainer: {
       type: Schema.ObjectId,
       ref: "Trainer",
