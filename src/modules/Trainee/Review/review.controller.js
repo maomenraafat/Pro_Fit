@@ -52,7 +52,7 @@ const addReview = catchAsyncError(async (req, res) => {
 
 const getReviews = catchAsyncError(async (req, res) => {
   const { trainerId } = req.params;
-  const traineeId = req.user.payload.id; 
+  const traineeId = req.user.payload.id;
 
   // Update the populate method to include the profilePhoto
   const reviews = await reviewModel

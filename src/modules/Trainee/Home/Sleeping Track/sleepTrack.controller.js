@@ -55,8 +55,8 @@ const getLatestSleepData = catchAsyncError(async (req, res) => {
   
     // Retrieve the latest sleep data for the trainee
     const latestSleepData = await SleepTrack.findOne({ trainee: traineeId })
-                                             .sort({ dateRecorded: -1 }) // Sort by date recorded in descending order
-                                             .limit(1); // Limit to only one result
+                                             .sort({ dateRecorded: -1 })
+                                             .limit(1); 
   
     if (!latestSleepData) {
       return res.status(404).json({
@@ -123,10 +123,6 @@ const getSleepData = catchAsyncError(async (req, res) => {
     data: formattedSleepData,
   });
 });
-
-
-
-  
 
   export{
     addSleepData,

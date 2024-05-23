@@ -57,4 +57,67 @@ trainerTraineesRouter.get(
   trainee.getTraineesSubscription
 );
 
+// GET endpoint for trainer to view a trainee's water intake details
+trainerTraineesRouter.get(
+  "/water/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeWaterIntakeForTrainer
+);
+
+// PATCH endpoint for trainer to update a trainee's water goal
+trainerTraineesRouter.patch(
+  "/water/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.updateTraineeWaterGoal
+);
+
+//GET endpoint to get Heart Rate Record of the trainer
+trainerTraineesRouter.get(
+  "/heart-rating/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeLatestHeartRateRecord
+);
+
+// GET endpoint for trainer to view a trainee's steps of today
+trainerTraineesRouter.get(
+  "/steps/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTodayStepsForTrainer
+);
+
+// PATCH endpoint for trainer to update a trainee's step goal
+trainerTraineesRouter.patch(
+  "/steps/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.updateTraineeStepGoalForTrainer
+);
+
+// GET endpoint to get the latest sleep data of the trainee for the trainer
+trainerTraineesRouter.get(
+  "/sleep-tracking/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeLatestSleepData
+);
+
+// GET endpoint for trainer to view a trainee's progress entries
+trainerTraineesRouter.get(
+  "/progress/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeProgressForTrainer
+);
+
+// GET endpoint for trainer to view diet assessment measurements of a specific trainee
+trainerTraineesRouter.get(
+  "/measurements/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getDietAssessmentMeasurementsForTrainer
+);
 export default trainerTraineesRouter;
