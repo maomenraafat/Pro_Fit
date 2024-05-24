@@ -163,7 +163,7 @@ const getDietAssessmentsData = catchAsyncError(async (req, res, next) => {
 
 const getDietAssessments = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
-  const data = await traineeDietAssessmentModel.findOne({ trainee: traineeId });
+  const data = await traineeDietAssessmentModel.find({ trainee: traineeId });
   // if (!data) {
   //   return next(new AppError("data not found", 404));
   // }

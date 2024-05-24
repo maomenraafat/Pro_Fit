@@ -320,7 +320,7 @@ const getTrainerAndPackageDetails = catchAsyncError(async (req, res, next) => {
     })
     .populate({
       path: "assignedTrainer",
-      select: "firstName lastName profilePhoto -_id",
+      select: "firstName lastName profilePhoto _id",
     });
   if (!trainee || !trainee.assignedTrainer || !trainee.package) {
     res.status(200).json({
@@ -342,6 +342,7 @@ const getTrainerAndPackageDetails = catchAsyncError(async (req, res, next) => {
     success: true,
     data: {
       trainerName: trainerFullName,
+      trainerId: trainee.assignedTrainer._id,
       profilePhoto,
       SubscriptionType: packageType,
       paidAmount: trainee.package.price,
@@ -436,7 +437,7 @@ const cancelSubscription = catchAsyncError(async (req, res, next) => {
 
   await SubscriptionModel.findOneAndUpdate(
     { traineeId, trainerId, package: packageId, status: "Active" },
-    { status: "Canceled" }
+    { status: "Cancelled" }
   );
 
   res.status(200).json({
