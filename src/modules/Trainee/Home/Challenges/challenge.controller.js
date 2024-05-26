@@ -28,7 +28,7 @@ const addChallenge = catchAsyncError(async (req, res) => {
     const folderName = `Challenges/${traineeId}`;
     const uploadResult = await uploadImageToCloudinary(req.file, folderName);
     if (uploadResult && uploadResult.url) {
-      imageUrl = uploadResult.url; // Capture the URL from Cloudinary upload
+      imageUrl = uploadResult.url; 
     }
   }
 
