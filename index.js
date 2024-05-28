@@ -32,6 +32,8 @@ import DietRouter from "./src/modules/Trainee/Diet/Diet.routes.js";
 import trainerTraineesRouter from "./src/modules/Trainer/trainee/trainee.routes.js";
 import trainerChallengeRouter from "./src/modules/Trainer/Challenges/challenge.routes.js";
 import traineeProgressRouter from "./src/modules/Trainee/Progress/progress.routes.js";
+import conversationRouter from "./src/modules/Conversation/conversation.routes.js";
+import messageRouter from './src/modules/Message/message.routes.js';
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -60,13 +62,14 @@ app.use("/api/v1/trainees", traineeReviewRouter);
 app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
 app.use("/api/v1/trainees/steps", tranieeRecordSteps);
 app.use("/api/v1/trainees/water", traineeWaterIntake);
-app.use("/api/v1/trainees/steps", tranieeRecordSteps);
 app.use("/api/v1/trainees/challenge", traineeChallengeRouter);
 app.use("/api/v1/trainees/progress", traineeProgressRouter);
 app.use("/api/v1/trainees/sleeping-track", traineesleepingTrack);
 app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 app.use("/api/v1/trainees/DietAssessment", DietAssessmentRouter);
 app.use("/api/v1/trainees/Diet", DietRouter);
+app.use("/api/v1/chat", conversationRouter);
+app.use("/api/v1/chat", messageRouter);
 
 //app.use("/api/v1/trainees/subscription", SubscriptionRouter);
 

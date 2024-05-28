@@ -114,6 +114,10 @@ export const uploadFoodImage = () => {
   return multerRefactor().single("foodImage");
 };
 
+export const uploadMessageImages = () => {
+  return multerRefactor().array("messageImage", 10);
+};
+
 export function determineFolderName(req, fieldName) {
   let name = "default11";
 

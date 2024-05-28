@@ -8,6 +8,7 @@ import { WorkoutModel } from "../../../../Database/models/workout.model.js";
 import { traineeDietAssessmentModel } from "../../../../Database/models/traineeDietAssessment.model.js";
 import { traineeWorkoutAssessmentModel } from "../../../../Database/models/traineeWorkoutAssessment.model.js";
 import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
+import { conversationModel } from "../../../../Database/models/conversation.model.js";
 
 const PACKAGE_TYPES = {
   NUTRITION_WORKOUT: "Nutrition & Workout Plan",
@@ -388,6 +389,15 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
   });
   await newSubscription.save();
 
+  // Create a new conversation
+  const conversation = new conversationModel({
+    participants: [
+      { participantId: traineeId, participantModel: 'Trainee' },
+      { participantId: id, participantModel: 'Trainer' }
+    ]
+  });
+
+  await conversation.save();
   res.status(200).json({
     success: true,
     //message: "Subscription successful",
