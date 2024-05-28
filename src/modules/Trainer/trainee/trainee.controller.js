@@ -829,11 +829,11 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   // Retrieve all progress entries for the trainee
   const progress = await progressModel.find({ trainee: id });
 
-  // Format the response to contain progressId, image, and formatted createdAt date
+  // Format the response to contain progressId, image, and ISO formatted createdAt date
   const formattedProgressEntries = progress.map(entry => ({
     progressId: entry._id,
     image: entry.image,
-    createdAt: moment(entry.createdAt).format('D MMMM, YYYY')
+    createdAt: entry.createdAt.toISOString()
   }));
 
   res.status(200).json({
@@ -842,6 +842,7 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
     data: formattedProgressEntries,
   });
 });
+
 const getDietAssessmentMeasurementsForTrainer = catchAsyncError(async (req, res) => {
   const trainerId = req.user.payload.id;
   const { id } = req.params;
