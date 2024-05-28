@@ -375,7 +375,7 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
   //   select: "",
   // });
 
-  let data = await apiFeatures.mongooseQuery;
+  let data = await apiFeatures.mongooseQuery.populate("ingredients.food");
 
   let totalCount = await mealModel
     .find(apiFeatures.mongooseQuery.getQuery())
@@ -401,7 +401,7 @@ const getSpecificMeal = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await mealModel.findById(id).populate({
     path: "ingredients.food",
-    select: "foodImage foodname macros",
+    //select: "foodImage foodname macros",
   });
   if (!data) {
     return next(new AppError(" data not found", 404));
