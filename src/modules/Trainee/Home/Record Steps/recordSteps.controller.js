@@ -132,4 +132,16 @@ const getTodaySteps = catchAsyncError(async (req, res) => {
   });
 });
 
-export { setGoal, recordSteps, getTodaySteps };
+const getStepGoalsList = catchAsyncError(async (req, res) => {
+  const stepGoalsList = [];
+  for (let i = 500; i <= 30000; i += 500) {
+    stepGoalsList.push(i);
+  }
+  res.status(200).json({
+    success: true,
+    message: "Step goals list fetched successfully.",
+    data: stepGoalsList,
+  });
+});
+
+export { setGoal, recordSteps, getTodaySteps,getStepGoalsList };

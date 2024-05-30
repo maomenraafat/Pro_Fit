@@ -593,7 +593,7 @@ const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
   }
 
   const heartRateData = lastHeartRateRecord.bpm;
-  const recordDate = moment(lastHeartRateRecord.createdAt).format("MM/DD/YYYY");
+  const recordDate = lastHeartRateRecord.createdAt.toISOString();
 
   res.status(200).json({
     success: true,
@@ -744,7 +744,7 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     .limit(1);
 
   if (!latestSleepData) {
-    const currentDate = moment().tz("Africa/Cairo").format("MM/DD/YYYY");
+    const currentDate = new Date().toISOString();
     return res.status(200).json({
       success: true,
       message: "No sleep data found for this trainee.",
@@ -754,17 +754,6 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
       },
     });
   }
-
-  // Format the times and date for display
-  const fallAsleepTime = moment(latestSleepData.fallAsleepTime)
-    .tz("Africa/Cairo")
-    .format("hh:mm A");
-  const wakeUpTime = moment(latestSleepData.wakeUpTime)
-    .tz("Africa/Cairo")
-    .format("hh:mm A");
-  const dateRecorded = moment(latestSleepData.dateRecorded)
-    .tz("Africa/Cairo")
-    .format("MM/DD/YYYY");
 
   // Calculate hours and minutes slept
   const duration = moment.duration(
@@ -781,9 +770,9 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     data: {
       _id: latestSleepData._id,
       hoursSlept,
-      fallAsleepTime,
-      wakeUpTime,
-      dateRecorded,
+      fallAsleepTime: new Date(latestSleepData.fallAsleepTime).toISOString(),
+      wakeUpTime: new Date(latestSleepData.wakeUpTime).toISOString(),
+      dateRecorded: new Date(latestSleepData.dateRecorded).toISOString(),
     },
   });
 });
