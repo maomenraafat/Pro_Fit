@@ -181,6 +181,7 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
           },
           {
             $project: {
+              _id: 1,
               firstName: 1,
               lastName: 1,
               email: 1,
@@ -194,12 +195,19 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
       },
     },
     { $unwind: "$traineeDetails" },
-    { $sort: { "traineeDetails.currentAssessment.createdAt": 1 } },
+    {
+      $lookup: {
+        from: "packages",
+        localField: "package",
+        foreignField: "_id",
+        as: "packageDetails",
+      },
+    },
+    { $unwind: "$packageDetails" },
+    { $sort: { "traineeDetails.currentAssessment.createdAt": -1 } },
   ]);
-  let apiFeatures = new ApiFeatures(baseQuery, req.query)
-    //.sort()
-    //.filter()
-    .paginate();
+
+  let apiFeatures = new ApiFeatures(baseQuery, req.query).paginate();
 
   let subscriptions = await apiFeatures.mongooseQuery;
 
@@ -214,25 +222,37 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
       data: [],
     });
   }
-  subscriptions.forEach((subscription) => {
-    if (
-      subscription.status === "Cancelled" ||
-      subscription.status === "Expired"
-    ) {
-      if (subscription.traineeId) {
-        subscription.traineeId._doc.dietAssessmentStatus = "Not Allowed";
-      }
-    }
-  });
 
   const responseSubscriptions = subscriptions.map((sub) => ({
-    traineeId: sub.traineeDetails._id,
-    firstName: sub.traineeDetails.firstName,
-    lastName: sub.traineeDetails.lastName,
-    email: sub.traineeDetails.email,
-    profilePhoto: sub.traineeDetails.profilePhoto,
-    dietAssessmentStatus: sub.traineeDetails.dietAssessmentStatus,
-    currentAssessmentCreatedAt: sub.traineeDetails.currentAssessment.createdAt,
+    _id: sub._id,
+    trainerId: sub.trainerId,
+    traineeId: {
+      _id: sub.traineeDetails._id,
+      firstName: sub.traineeDetails.firstName,
+      lastName: sub.traineeDetails.lastName,
+      email: sub.traineeDetails.email,
+      profilePhoto: sub.traineeDetails.profilePhoto,
+      dietAssessmentStatus: sub.traineeDetails.dietAssessmentStatus,
+      currentAssessmentCreatedAt:
+        sub.traineeDetails.currentAssessment.createdAt,
+    },
+    package: {
+      _id: sub.packageDetails._id,
+      packageName: sub.packageDetails.packageName,
+      packageType: sub.packageDetails.packageType,
+      // description: sub.packageDetails.description,
+      // price: sub.packageDetails.price,
+      // duration: sub.packageDetails.duration,
+      // subscribersLimit: sub.packageDetails.subscribersLimit,
+    },
+    paidAmount: sub.paidAmount,
+    status: sub.status,
+    startDate: sub.startDate,
+    duration: sub.duration,
+    endDate: sub.endDate,
+    subscriptionType: sub.subscriptionType,
+    traineeSubscriptionStatus: sub.traineeSubscriptionStatus,
+    __v: sub.__v,
   }));
 
   res.status(200).json({
