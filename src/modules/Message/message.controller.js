@@ -10,8 +10,7 @@ const getMessages = catchAsyncError(async (req, res, next) => {
 
   const messages = await messageModel
     .find({ conversationId })
-    .populate("sender", "firstName lastName email profilePhoto")
-    .populate("receiver", "firstName lastName email profilePhoto");
+    .populate("sender", "firstName lastName email profilePhoto");
 
   if (!messages.length) {
     return next(new AppError("No messages found", 404));
@@ -27,12 +26,6 @@ const getMessages = catchAsyncError(async (req, res, next) => {
       name: `${message.sender.firstName} ${message.sender.lastName}`,
       email: message.sender.email,
       profilePhoto: message.sender.profilePhoto || "defaultProfilePhotoUrl", // Use a default if needed
-    },
-    receiver: {
-      id: message.receiver._id,
-      name: `${message.receiver.firstName} ${message.receiver.lastName}`,
-      email: message.receiver.email,
-      profilePhoto: message.receiver.profilePhoto || "defaultProfilePhotoUrl", // Use a default if needed
     },
   }));
 
