@@ -37,6 +37,12 @@ FoodRouter.get(
   Food.getAllFoods
 );
 FoodRouter.get(
+  "/getFoodsForSpecificplan/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  Food.getFoodsForSpecificplan
+);
+FoodRouter.get(
   "/:id",
   verifyToken,
   allowedTo("trainer", "admin"),
