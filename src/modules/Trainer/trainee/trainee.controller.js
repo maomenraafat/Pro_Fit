@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { progressModel } from "../../../../Database/models/Progress.model.js";
 import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 import { HeartRate } from "../../../../Database/models/heartRate.model.js";
@@ -10,17 +11,53 @@ import { WaterRecord } from "../../../../Database/models/waterIntake.model.js";
 import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
-import moment from 'moment';
+import moment from "moment";
 
 const getActiveTrainees = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
+  let traineeIds = [];
+
+  if (req.query.keywords) {
+    const nameParts = req.query.keywords.split(" ");
+    let query = {};
+
+    if (nameParts.length > 1) {
+      query = {
+        $or: [
+          {
+            firstName: { $regex: nameParts[0], $options: "i" },
+            lastName: { $regex: nameParts[1], $options: "i" },
+          },
+          {
+            firstName: { $regex: nameParts[1], $options: "i" },
+            lastName: { $regex: nameParts[0], $options: "i" },
+          },
+        ],
+      };
+    } else {
+      query = {
+        $or: [
+          { firstName: { $regex: req.query.keywords, $options: "i" } },
+          { lastName: { $regex: req.query.keywords, $options: "i" } },
+        ],
+      };
+    }
+
+    const trainees = await traineeModel.find(query).select("_id");
+    traineeIds = trainees.map((trainee) => trainee._id);
+  }
+
   let baseQuery = SubscriptionModel.find({
-    trainerId,
+    trainerId: trainerId,
+    //status: "Active",
+    traineeSubscriptionStatus: "Current",
+    ...(traineeIds.length > 0 && { traineeId: { $in: traineeIds } }),
   })
     .populate({
       path: "traineeId",
       select:
         "firstName lastName email profilePhoto dietAssessmentStatus  startDate endDate",
+      match: { _id: { $ne: null } },
     })
     .populate({
       path: "package",
@@ -29,12 +66,14 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
 
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
     .sort()
-    .search()
     .filter()
     .paginate()
     .fields();
 
   let subscriptions = await apiFeatures.mongooseQuery;
+  subscriptions = subscriptions.filter(
+    (subscription) => subscription.traineeId !== null
+  );
   if (!subscriptions || subscriptions.length === 0) {
     return res.status(200).json({
       success: true,
@@ -46,6 +85,16 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
       data: [],
     });
   }
+  subscriptions.forEach((subscription) => {
+    if (
+      subscription.status === "Cancelled" ||
+      subscription.status === "Expired"
+    ) {
+      if (subscription.traineeId) {
+        subscription.traineeId._doc.dietAssessmentStatus = "Not Allowed";
+      }
+    }
+  });
 
   const updateOperations = subscriptions.map(async (subscription) => {
     try {
@@ -79,129 +128,78 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
     data: subscriptions,
   });
 });
-// const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
-//   const trainerId = req.user.payload.id;
-//   let baseQuery = SubscriptionModel.find({
-//     trainerId,
-//   })
-//     .populate({
-//       path: "traineeId",
-//       select: "firstName lastName email profilePhoto dietAssessmentStatus ",
-//     })
-//     .populate({
-//       path: "package",
-//       select: "packageName packageType",
-//     });
-
-//   let apiFeatures = new ApiFeatures(baseQuery, req.query)
-//     .sort()
-//     .search()
-//     .filter()
-//     .paginate()
-//     .fields();
-
-//   let subscriptions = await apiFeatures.mongooseQuery;
-//   if (!subscriptions || subscriptions.length === 0) {
-//     return res.status(200).json({
-//       success: true,
-//       totalDocuments: 0,
-//       totalPages: 0,
-//       page: apiFeatures.page,
-//       limit: apiFeatures.limit,
-//       message: "No trainees found",
-//       data: [],
-//     });
-//   }
-//   subscriptions = subscriptions.filter(
-//     (subscription) => subscription.traineeId.dietAssessmentStatus === "Ready"
-//   );
-
-//   const updateOperations = subscriptions.map(async (subscription) => {
-//     try {
-//       const trainee = subscription.traineeId;
-//       if (trainee && typeof trainee.setCurrentDietAssessment === "function") {
-//         await trainee.setCurrentDietAssessment();
-//       }
-//     } catch (error) {
-//       console.error("Error updating diet assessment for trainee:", error);
-//     }
-//   });
-
-//   await Promise.all(updateOperations);
-//   await SubscriptionModel.populate(subscriptions, {
-//     path: "traineeId.traineeDietAssessment",
-//     select: "createdAt",
-//   });
-
-//   let totalCount = await SubscriptionModel.countDocuments(
-//     apiFeatures.mongooseQuery.getQuery()
-//   );
-//   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
-
-//   console.log(
-//     "Subscriptions before sorting:",
-//     subscriptions.map((sub) => ({
-//       traineeStatus: sub.traineeId.traineeDietAssessment?.dietAssessmentStatus,
-//       createdAt: sub.traineeId.traineeDietAssessment?.createdAt,
-//     }))
-//   );
-
-//   subscriptions.sort((a, b) => {
-//     const aStatus =
-//       a.traineeId.traineeDietAssessment?.dietAssessmentStatus || "Not Ready";
-//     const bStatus =
-//       b.traineeId.traineeDietAssessment?.dietAssessmentStatus || "Not Ready";
-//     const aDate = a.traineeId.traineeDietAssessment?.createdAt || new Date(0);
-//     const bDate = b.traineeId.traineeDietAssessment?.createdAt || new Date(0);
-
-//     if (aStatus === "Ready" && bStatus !== "Ready") {
-//       return -1;
-//     } else if (aStatus !== "Ready" && bStatus === "Ready") {
-//       return 1;
-//     }
-
-//     return new Date(aDate) - new Date(bDate);
-//   });
-
-//   console.log(
-//     "Subscriptions after sorting:",
-//     subscriptions.map((sub) => ({
-//       traineeStatus: sub.traineeId.traineeDietAssessment?.dietAssessmentStatus,
-//       createdAt: sub.traineeId.traineeDietAssessment?.createdAt,
-//     }))
-//   );
-
-//   res.status(200).json({
-//     success: true,
-//     totalDocuments: totalCount,
-//     totalPages: totalPages,
-//     page: apiFeatures.page,
-//     limit: apiFeatures.limit,
-//     message: "Trainees retrieved successfully",
-//     data: subscriptions,
-//   });
-// });
 
 const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
-  let baseQuery = SubscriptionModel.find({
-    trainerId,
-  })
-    .populate({
-      path: "traineeId",
-      select: "firstName lastName email profilePhoto dietAssessmentStatus",
-    })
-    .populate({
-      path: "package",
-      select: "packageName packageType",
-    });
+  const objectIdTrainerId = new mongoose.Types.ObjectId(trainerId);
+  if (!trainerId) {
+    return res.status(400).json({ message: "Trainer ID is required" });
+  }
 
+  let baseQuery = SubscriptionModel.aggregate([
+    {
+      $match: {
+        trainerId: objectIdTrainerId,
+        status: "Active",
+      },
+    },
+    {
+      $lookup: {
+        from: "trainees",
+        let: { traineeId: "$traineeId" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$_id", "$$traineeId"] },
+                  { $eq: ["$dietAssessmentStatus", "Ready"] },
+                ],
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "traineedietassessments",
+              let: { trainee: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$trainee", "$$trainee"] },
+                        { $eq: ["$status", "Current"] },
+                      ],
+                    },
+                  },
+                },
+                { $sort: { createdAt: -1 } },
+                { $limit: 1 },
+              ],
+              as: "currentAssessment",
+            },
+          },
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              email: 1,
+              profilePhoto: 1,
+              dietAssessmentStatus: 1,
+              currentAssessment: { $arrayElemAt: ["$currentAssessment", 0] },
+            },
+          },
+        ],
+        as: "traineeDetails",
+      },
+    },
+    { $unwind: "$traineeDetails" },
+    { $sort: { "traineeDetails.currentAssessment.createdAt": 1 } },
+  ]);
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
-    .sort()
-    .search()
-    .filter()
-    .paginate()
-    .fields();
+    //.sort()
+    //.filter()
+    .paginate();
 
   let subscriptions = await apiFeatures.mongooseQuery;
 
@@ -216,73 +214,35 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
       data: [],
     });
   }
-
-  subscriptions = subscriptions.filter(
-    (subscription) => subscription.traineeId.dietAssessmentStatus === "Ready"
-  );
-
-  const totalCount = subscriptions.length;
-  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
-
-  const updateOperations = subscriptions.map(async (subscription) => {
-    try {
-      const trainee = subscription.traineeId;
-      if (trainee && typeof trainee.setCurrentDietAssessment === "function") {
-        await trainee.setCurrentDietAssessment();
+  subscriptions.forEach((subscription) => {
+    if (
+      subscription.status === "Cancelled" ||
+      subscription.status === "Expired"
+    ) {
+      if (subscription.traineeId) {
+        subscription.traineeId._doc.dietAssessmentStatus = "Not Allowed";
       }
-    } catch (error) {
-      console.error("Error updating diet assessment for trainee:", error);
     }
   });
 
-  await Promise.all(updateOperations);
-
-  await SubscriptionModel.populate(subscriptions, {
-    path: "traineeId.traineeDietAssessment",
-    select: "createdAt",
-  });
-
-  console.log(
-    "Subscriptions before sorting:",
-    subscriptions.map((sub) => ({
-      traineeStatus: sub.traineeId.traineeDietAssessment?.dietAssessmentStatus,
-      createdAt: sub.traineeId.traineeDietAssessment?.createdAt,
-    }))
-  );
-
-  subscriptions.sort((a, b) => {
-    const aStatus =
-      a.traineeId.traineeDietAssessment?.dietAssessmentStatus || "Not Ready";
-    const bStatus =
-      b.traineeId.traineeDietAssessment?.dietAssessmentStatus || "Not Ready";
-    const aDate = a.traineeId.traineeDietAssessment?.createdAt || new Date(0);
-    const bDate = b.traineeId.traineeDietAssessment?.createdAt || new Date(0);
-
-    if (aStatus === "Ready" && bStatus !== "Ready") {
-      return -1;
-    } else if (aStatus !== "Ready" && bStatus === "Ready") {
-      return 1;
-    }
-
-    return new Date(aDate) - new Date(bDate);
-  });
-
-  console.log(
-    "Subscriptions after sorting:",
-    subscriptions.map((sub) => ({
-      traineeStatus: sub.traineeId.traineeDietAssessment?.dietAssessmentStatus,
-      createdAt: sub.traineeId.traineeDietAssessment?.createdAt,
-    }))
-  );
+  const responseSubscriptions = subscriptions.map((sub) => ({
+    traineeId: sub.traineeDetails._id,
+    firstName: sub.traineeDetails.firstName,
+    lastName: sub.traineeDetails.lastName,
+    email: sub.traineeDetails.email,
+    profilePhoto: sub.traineeDetails.profilePhoto,
+    dietAssessmentStatus: sub.traineeDetails.dietAssessmentStatus,
+    currentAssessmentCreatedAt: sub.traineeDetails.currentAssessment.createdAt,
+  }));
 
   res.status(200).json({
     success: true,
-    totalDocuments: totalCount,
-    totalPages: totalPages,
+    totalDocuments: responseSubscriptions.length,
+    totalPages: Math.ceil(responseSubscriptions.length / apiFeatures.limit),
     page: apiFeatures.page,
     limit: apiFeatures.limit,
     message: "Trainees retrieved successfully",
-    data: subscriptions,
+    data: responseSubscriptions,
   });
 });
 
@@ -395,10 +355,13 @@ const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
   }
   res.status(200).json({ success: true, data });
 });
+
 const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
-  const data = await nutritionModel.findOneAndUpdate(
+  const numberOfWeeks = req.body.numberOfWeeks;
+
+  const updatedPlan = await nutritionModel.findOneAndUpdate(
     {
       trainer: trainerId,
       trainee: id,
@@ -410,20 +373,40 @@ const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
       runValidators: true,
     }
   );
-  if (!data) {
-    return next(new AppError("data not found", 404));
+
+  if (!updatedPlan) {
+    return next(new AppError("Nutrition plan not found", 404));
   }
+
+  const daysToDuplicate = updatedPlan.days.slice(0, 7);
+
+  const newDays = [];
+  for (let i = 0; i < numberOfWeeks; i++) {
+    daysToDuplicate.forEach((day, index) => {
+      const newDay = { ...day.toObject() };
+      newDay._id = undefined;
+      newDay.day = `Day ${updatedPlan.days.length + newDays.length + 1}`;
+      newDays.push(newDay);
+    });
+  }
+
+  updatedPlan.days.push(...newDays);
+
+  await updatedPlan.save();
+
   await traineeModel.findByIdAndUpdate(
     id,
     { dietAssessmentStatus: "Working" },
     { new: true }
   );
+
   res.status(200).json({
     success: true,
-    message: "Customize Plan updated successfully ",
-    data,
+    message: "Customize Plan updated and duplicated successfully",
+    data: updatedPlan,
   });
 });
+
 const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
@@ -587,10 +570,14 @@ const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
     });
   }
 
-  if (!trainee.assignedTrainer || trainee.assignedTrainer.toString() !== trainerId) {
+  if (
+    !trainee.assignedTrainer ||
+    trainee.assignedTrainer.toString() !== trainerId
+  ) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to view this trainee's heart rate records.",
+      message:
+        "You are not authorized to view this trainee's heart rate records.",
     });
   }
 
@@ -606,7 +593,7 @@ const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
   }
 
   const heartRateData = lastHeartRateRecord.bpm;
-  const recordDate = moment(lastHeartRateRecord.createdAt).format('MM/DD/YYYY');
+  const recordDate = moment(lastHeartRateRecord.createdAt).format("MM/DD/YYYY");
 
   res.status(200).json({
     success: true,
@@ -741,7 +728,10 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     });
   }
 
-  if (!trainee.assignedTrainer || trainee.assignedTrainer.toString() !== trainerId) {
+  if (
+    !trainee.assignedTrainer ||
+    trainee.assignedTrainer.toString() !== trainerId
+  ) {
     return res.status(403).json({
       success: false,
       message: "You are not authorized to view this trainee's sleep data.",
@@ -822,7 +812,8 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   if (trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to view the progress entries for this trainee.",
+      message:
+        "You are not authorized to view the progress entries for this trainee.",
     });
   }
 
@@ -830,10 +821,10 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   const progress = await progressModel.find({ trainee: id });
 
   // Format the response to contain progressId, image, and formatted createdAt date
-  const formattedProgressEntries = progress.map(entry => ({
+  const formattedProgressEntries = progress.map((entry) => ({
     progressId: entry._id,
     image: entry.image,
-    createdAt: moment(entry.createdAt).format('D MMMM, YYYY')
+    createdAt: moment(entry.createdAt).format("D MMMM, YYYY"),
   }));
 
   res.status(200).json({
@@ -842,64 +833,68 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
     data: formattedProgressEntries,
   });
 });
-const getDietAssessmentMeasurementsForTrainer = catchAsyncError(async (req, res) => {
-  const trainerId = req.user.payload.id;
-  const { id } = req.params;
+const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
+  async (req, res) => {
+    const trainerId = req.user.payload.id;
+    const { id } = req.params;
 
-  // Find the trainee
-  const trainee = await traineeModel.findById(id);
-  if (!trainee) {
-    return res.status(404).json({
-      success: false,
-      message: "Trainee not found.",
-    });
-  }
-
-  // Check if the trainee is assigned to the trainer
-  if (trainee.assignedTrainer.toString() !== trainerId) {
-    return res.status(403).json({
-      success: false,
-      message: "You are not authorized to view this trainee's measurements.",
-    });
-  }
-
-  // Retrieve all diet assessments for the trainee
-  const assessments = await traineeDietAssessmentModel.find({ trainee: id }).sort({ createdAt: -1 });
-
-  // Format the assessments
-  const formattedAssessments = assessments.map(assessment => ({
-    weight: {
-      value: assessment.weight,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
-    },
-    bodyFat: {
-      value: assessment.bodyFat,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
-    },
-    waistArea: {
-      value: assessment.waistArea,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
-    },
-    neckArea: {
-      value: assessment.neckArea,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
+    // Find the trainee
+    const trainee = await traineeModel.findById(id);
+    if (!trainee) {
+      return res.status(404).json({
+        success: false,
+        message: "Trainee not found.",
+      });
     }
-  }));
 
-  // Group assessments by measurement type
-  const groupedAssessments = {
-    weight: formattedAssessments.map(a => a.weight),
-    bodyFat: formattedAssessments.map(a => a.bodyFat),
-    waistArea: formattedAssessments.map(a => a.waistArea),
-    neckArea: formattedAssessments.map(a => a.neckArea)
-  };
+    // Check if the trainee is assigned to the trainer
+    if (trainee.assignedTrainer.toString() !== trainerId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to view this trainee's measurements.",
+      });
+    }
 
-  res.status(200).json({
-    success: true,
-    message: "Diet assessment measurements retrieved successfully.",
-    data: groupedAssessments
-  });
-});
+    // Retrieve all diet assessments for the trainee
+    const assessments = await traineeDietAssessmentModel
+      .find({ trainee: id })
+      .sort({ createdAt: -1 });
+
+    // Format the assessments
+    const formattedAssessments = assessments.map((assessment) => ({
+      weight: {
+        value: assessment.weight,
+        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+      },
+      bodyFat: {
+        value: assessment.bodyFat,
+        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+      },
+      waistArea: {
+        value: assessment.waistArea,
+        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+      },
+      neckArea: {
+        value: assessment.neckArea,
+        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+      },
+    }));
+
+    // Group assessments by measurement type
+    const groupedAssessments = {
+      weight: formattedAssessments.map((a) => a.weight),
+      bodyFat: formattedAssessments.map((a) => a.bodyFat),
+      waistArea: formattedAssessments.map((a) => a.waistArea),
+      neckArea: formattedAssessments.map((a) => a.neckArea),
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Diet assessment measurements retrieved successfully.",
+      data: groupedAssessments,
+    });
+  }
+);
 
 export {
   getActiveTrainees,
@@ -917,5 +912,5 @@ export {
   getTodayStepsForTrainer,
   getTraineeLatestSleepData,
   getTraineeProgressForTrainer,
-  getDietAssessmentMeasurementsForTrainer
+  getDietAssessmentMeasurementsForTrainer,
 };
