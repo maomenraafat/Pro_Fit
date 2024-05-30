@@ -10,16 +10,36 @@ const getMessages = catchAsyncError(async (req, res, next) => {
 
   const messages = await messageModel
     .find({ conversationId })
-    .populate("sender", "firstName lastName email");
+    .populate("sender", "firstName lastName email profilePhoto")
+    .populate("receiver", "firstName lastName email profilePhoto");
 
   if (!messages.length) {
     return next(new AppError("No messages found", 404));
   }
 
+  const formattedMessages = messages.map(message => ({
+    id: message._id,
+    content: message.content,
+    images: message.images,
+    time: message.createdAt.toISOString(), // Formatting time in ISO
+    sender: {
+      id: message.sender._id,
+      name: `${message.sender.firstName} ${message.sender.lastName}`,
+      email: message.sender.email,
+      profilePhoto: message.sender.profilePhoto || "defaultProfilePhotoUrl", // Use a default if needed
+    },
+    receiver: {
+      id: message.receiver._id,
+      name: `${message.receiver.firstName} ${message.receiver.lastName}`,
+      email: message.receiver.email,
+      profilePhoto: message.receiver.profilePhoto || "defaultProfilePhotoUrl", // Use a default if needed
+    },
+  }));
+
   res.status(200).json({
     success: true,
     message: "Messages retrieved successfully",
-    data: messages,
+    data: formattedMessages,
   });
 });
 
@@ -27,8 +47,14 @@ const getMessages = catchAsyncError(async (req, res, next) => {
 const sendMessage = catchAsyncError(async (req, res, next) => {
   const { conversationId } = req.params;
   const { content } = req.body;
-  const senderId = req.user.id;
-  const senderModel = req.user.role;
+  const senderId = req.user.payload.id;
+  let senderModel = req.user.payload.role;
+
+  // Capitalize the senderModel to match enum values in the schema
+  senderModel = senderModel.charAt(0).toUpperCase() + senderModel.slice(1);
+
+  console.log(senderId);
+  console.log(senderModel);
 
   // Find the conversation to get receiver info
   const conversation = await conversationModel.findById(conversationId);
@@ -39,8 +65,11 @@ const sendMessage = catchAsyncError(async (req, res, next) => {
   const receiver = conversation.participants.find(
     (participant) => participant.participantId.toString() !== senderId
   );
-  const receiverId = receiver.participantId;
-  const receiverModel = receiver.participantModel;
+  let receiverId = receiver.participantId;
+  let receiverModel = receiver.participantModel;
+
+  // Capitalize the receiverModel to match enum values in the schema
+  receiverModel = receiverModel.charAt(0).toUpperCase() + receiverModel.slice(1);
 
   let imageUrls = [];
   if (req.files && req.files.length > 0) {
