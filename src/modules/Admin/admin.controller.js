@@ -121,21 +121,29 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
     return;
   }
 
+  // if (!isTrainee) {
+  //   await Promise.all(
+  //     users.map(async (user) => {
+  //       await user.updateSubscriptions();
+  //       user.paidAmount = await user.calculateTotalPaidAmount();
+  //       await user.save();
+  //     })
+  //   );
+  // }
   if (!isTrainee) {
     await Promise.all(
       users.map(async (user) => {
-        await user.updateSubscriptions();
+        user.activeSubscribers = await user.fetchActiveSubscribers();
         user.paidAmount = await user.calculateTotalPaidAmount();
         await user.save();
       })
     );
   }
-
   const data = users.map((user) => {
     const userObject = user.toObject({ virtuals: true });
-    userObject.Registration_Date = userObject.createdAt
-      .toISOString()
-      .split("T")[0];
+    userObject.Registration_Date = userObject.createdAt;
+    // .toISOString()
+    // .split("T")[0];
     delete userObject.createdAt;
     if (!isTrainee) {
       delete userObject.updatedAt;
@@ -160,23 +168,68 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
 
 const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
+  let trainerIds = [],
+    traineeIds = [];
+  if (req.query.keywords) {
+    const nameParts = req.query.keywords.split(" ");
+    let regex = new RegExp(`^${req.query.keywords}$`, "i"); // Default regex if only one name is provided
 
-  let baseQuery = SubscriptionModel.find()
+    let searchQuery = {
+      $or: [{ firstName: regex }, { lastName: regex }],
+    };
+
+    if (nameParts.length > 1) {
+      // Adjust regex to match both first and last names
+      regex = nameParts.map((name) => new RegExp(`^${name}$`, "i"));
+
+      searchQuery = {
+        $or: [
+          { firstName: regex[0], lastName: regex[1] },
+          { firstName: regex[1], lastName: regex[0] },
+        ],
+      };
+    }
+
+    const trainers = await trainerModel.find(searchQuery).select("_id");
+    trainerIds = trainers.map((trainer) => trainer._id);
+
+    const trainees = await traineeModel.find(searchQuery).select("_id");
+    traineeIds = trainees.map((trainee) => trainee._id);
+  }
+
+  let query = {
+    $or: [
+      { trainerId: { $in: trainerIds } },
+      { traineeId: { $in: traineeIds } },
+    ],
+  };
+
+  if (!trainerIds.length && !traineeIds.length) {
+    query = {};
+  }
+
+  let baseQuery = SubscriptionModel.find(query)
     .select("startDate paidAmount status subscriptionType duration")
     .populate({
       path: "trainerId",
       select: "firstName lastName",
+      justOne: true,
+      match: { _id: { $exists: true } },
     })
     .populate({
       path: "traineeId",
       select: "firstName lastName",
+      justOne: true,
+      match: { _id: { $exists: true } },
     })
     .populate({
       path: "package",
       select: "packageName -_id",
+      justOne: true,
+      match: { _id: { $exists: true } },
     });
+
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
-    .search()
     .filter()
     .sort()
     .paginate()
@@ -185,7 +238,7 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
   let subscriptions = await apiFeatures.mongooseQuery;
 
   if (!subscriptions || subscriptions.length === 0) {
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       totalDocuments: 0,
       totalPages: 0,
@@ -194,26 +247,25 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
       message: "No subscriptions found",
       data: [],
     });
-    return;
   }
 
   const data = subscriptions.map((subscription) => ({
     id: subscription._id,
-    trainerName: `${subscription.trainerId.firstName} ${subscription.trainerId.lastName}`,
-    traineeName: `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`,
-    startDate: subscription.startDate
-      ? subscription.startDate.toISOString().split("T")[0]
-      : null,
-    packageName: subscription.package.packageName,
+    trainerName: subscription.trainerId
+      ? `${subscription.trainerId.firstName} ${subscription.trainerId.lastName}`
+      : "No Trainer",
+    traineeName: subscription.traineeId
+      ? `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`
+      : "No Trainee",
+    startDate: subscription.startDate,
+    packageName: subscription.package?.packageName || "No Package",
     Amount: subscription.paidAmount,
     duration: subscription.duration,
     subscriptionType: subscription.subscriptionType,
     status: subscription.status,
   }));
 
-  let totalCount = await SubscriptionModel.find(
-    apiFeatures.mongooseQuery.getQuery()
-  ).countDocuments();
+  let totalCount = await SubscriptionModel.countDocuments(query);
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
   res.status(200).json({

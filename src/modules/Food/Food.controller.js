@@ -4,6 +4,7 @@ import { foodModel } from "../../../Database/models/food.model.js";
 import { determineFolderName } from "../../multer/multer.js";
 import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
+import { nutritionModel } from "../../../Database/models/nutrition.model.js";
 
 async function handleFoodImageUpload(user, file) {
   const folderName = determineFolderName({ user }, "foodImage");
@@ -203,6 +204,61 @@ const getAllFoods = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+
+const getFoodsForSpecificplan = catchAsyncError(async (req, res, next) => {
+  const id = req.user.payload.id;
+  const nutritionId = req.params.id;
+  const nutrition = await nutritionModel.findById(nutritionId);
+  if (!nutrition) {
+    return next(new AppError("Nutrition plan not found", 404));
+  }
+
+  let query = {};
+  if ("allFoods" in req.query) {
+    query.$or = [{ Trainer: id }, { Trainer: null }];
+  } else if ("trainerFoods" in req.query) {
+    query.Trainer = id;
+  } else if ("profitFoods" in req.query) {
+    query.Trainer = null;
+  }
+
+  let apiFeatures = new ApiFeatures(foodModel.find(query), req.query)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+  let foods = await apiFeatures.mongooseQuery;
+  let totalCount = await foodModel.countDocuments(
+    apiFeatures.mongooseQuery.getQuery()
+  );
+
+  foods = foods.map((food) => {
+    const augmentedFood = food.toObject();
+    augmentedFood.allergenMatch = food.checkAllergensMatch(nutrition);
+    augmentedFood.diseaseCompatibilityMatch =
+      food.checkDiseaseCompatibilityMatch(nutrition);
+    augmentedFood.religionRestrictionMatch =
+      food.checkReligionRestrictionsMatch(nutrition);
+    return augmentedFood;
+  });
+
+  if (foods.length === 0) {
+    return next(new AppError("Data not found", 404));
+  }
+
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+  res.status(200).json({
+    success: true,
+    message: "Success",
+    totalDocuments: totalCount,
+    totalPages: totalPages,
+    page: apiFeatures.page,
+    limit: apiFeatures.limit,
+    data: foods,
+  });
+});
+
 const getSpecificFood = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await foodModel.findById(id);
@@ -234,6 +290,7 @@ export {
   getTrainerFood,
   getProfitFoods,
   getAllFoods,
+  getFoodsForSpecificplan,
   getSpecificFood,
   deleteFood,
 };
