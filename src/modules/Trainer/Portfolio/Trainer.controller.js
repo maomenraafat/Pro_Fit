@@ -7,6 +7,7 @@ import fs from "fs";
 import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
 import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 import { reviewModel } from "../../../../Database/models/review.model.js";
+import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 
 async function validateAndUpdateTrainer(id, statusUpdate, acceptPolicy) {
   const data = await trainerModel.findById(id);
@@ -348,11 +349,49 @@ const getAllReviews = catchAsyncError(async (req, res) => {
 
 const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  let baseQuery = SubscriptionModel.find({ trainerId: id })
+  let traineeIds = [];
+
+  if (req.query.keywords) {
+    const nameParts = req.query.keywords.split(" ");
+    let query = {};
+
+    if (nameParts.length > 1) {
+      // Assume the first part is the first name and the second part is the last name
+      query = {
+        $or: [
+          {
+            firstName: { $regex: nameParts[0], $options: "i" },
+            lastName: { $regex: nameParts[1], $options: "i" },
+          },
+          {
+            firstName: { $regex: nameParts[1], $options: "i" },
+            lastName: { $regex: nameParts[0], $options: "i" },
+          },
+        ],
+      };
+    } else {
+      // Search either first name or last name if only one part is provided
+      query = {
+        $or: [
+          { firstName: { $regex: req.query.keywords, $options: "i" } },
+          { lastName: { $regex: req.query.keywords, $options: "i" } },
+        ],
+      };
+    }
+
+    const trainees = await traineeModel.find(query).select("_id");
+    traineeIds = trainees.map((trainee) => trainee._id);
+  }
+
+  let baseQuery = SubscriptionModel.find({
+    trainerId: id,
+    ...(traineeIds.length > 0 && { traineeId: { $in: traineeIds } }), // Use trainee IDs from the search result
+  })
     .select("startDate paidAmount status subscriptionType duration")
     .populate({
       path: "traineeId",
       select: "firstName lastName",
+      match: { _id: { $ne: null } }, // Ensures only populated if traineeId exists
     })
     .populate({
       path: "package",
@@ -360,14 +399,15 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     });
 
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
-    .search()
     .filter()
     .sort()
     .paginate()
     .fields();
 
   let subscriptions = await apiFeatures.mongooseQuery;
-
+  subscriptions = subscriptions.filter(
+    (subscription) => subscription.traineeId !== null
+  );
   if (!subscriptions || subscriptions.length === 0) {
     res.status(200).json({
       success: true,
@@ -383,12 +423,14 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
 
   const data = subscriptions.map((subscription) => ({
     id: subscription._id,
-    fullName: `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`,
-    packageName: subscription.package.packageName,
+    firstName: subscription.traineeId?.firstName || "No Name ",
+    lastName: subscription.traineeId?.lastName || "No Name ",
+    // fullName: `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`,
+    packageName: subscription.package?.packageName || "No Package",
     status: subscription.status,
-    startDate: subscription.startDate
-      ? subscription.startDate.toISOString().split("T")[0]
-      : null,
+    startDate: subscription.startDate,
+    // ? subscription.startDate.toISOString().split("T")[0]
+    // : null,
     duration: subscription.duration,
     subscriptionType: subscription.subscriptionType,
     Amount: subscription.paidAmount,
