@@ -33,7 +33,11 @@ const subscriptionSchema = new Schema(
     },
     startDate: {
       type: Date,
-      default: Date.now,
+      default: () => {
+        const now = new Date();
+        now.setHours(now.getHours() + 3);
+        return now;
+      },
     },
     endDate: {
       type: Date,
@@ -66,9 +70,9 @@ subscriptionSchema.pre("save", async function (next) {
       }
     }
   }
-  if (this.endDate && this.endDate < new Date()) {
-    this.status = "Expired";
-  }
+  // if (this.endDate && this.endDate < new Date()) {
+  //   this.status = "Expired";
+  // }
   next();
 });
 

@@ -377,8 +377,12 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
     trainee
   );
   await SubscriptionModel.findOneAndUpdate(
-    { trainee: traineeId, traineeSubscriptionStatus: "Current" },
-    { status: "Archived" }
+    {
+      traineeId: traineeId,
+      trainerId: id,
+      traineeSubscriptionStatus: "Current",
+    },
+    { traineeSubscriptionStatus: "Archived" }
   );
   const newSubscription = new SubscriptionModel({
     trainerId: id,
