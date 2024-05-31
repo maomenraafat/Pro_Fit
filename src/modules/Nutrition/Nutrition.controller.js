@@ -18,15 +18,30 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     numberOfWeeks,
   } = req.body;
 
+  let newDays = [...days];
+
+  if (numberOfWeeks && numberOfWeeks > 1) {
+    const daysToDuplicate = days.slice(0, 7);
+
+    for (let i = 1; i < numberOfWeeks; i++) {
+      daysToDuplicate.forEach((day, index) => {
+        const newDay = { ...day };
+        newDay._id = undefined;
+        newDay.day = `Day ${newDays.length + 1}`;
+        newDays.push(newDay);
+      });
+    }
+  }
+
   const data = new nutritionModel({
     planName,
     trainer,
     description,
-    days,
+    days: newDays,
     plantype,
     daymacros,
     planmacros,
-    daysCount,
+    daysCount: newDays.length,
     goal,
     dietType,
     numberOfWeeks,
@@ -43,19 +58,50 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
 
 const updateNutritionPlan = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
+  const {
+    planName,
+    description,
+    days,
+    plantype,
+    daymacros,
+    planmacros,
+    daysCount,
+    goal,
+    dietType,
+    numberOfWeeks,
+  } = req.body;
 
-  const data = await nutritionModel.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const nutritionPlan = await nutritionModel.findById(id);
 
-  if (!data) {
+  if (!nutritionPlan) {
     return next(new AppError("No nutrition plan found with that ID", 404));
   }
+
+  let updatedDays = [...nutritionPlan.days];
+
+  days.forEach((updatedDay, index) => {
+    updatedDays[index] = updatedDay;
+    updatedDay._id = undefined;
+    updatedDays[index + 7] = { ...updatedDay, day: `Day ${index + 8}` };
+  });
+
+  nutritionPlan.planName = planName;
+  nutritionPlan.description = description;
+  nutritionPlan.days = updatedDays;
+  nutritionPlan.plantype = plantype;
+  nutritionPlan.daymacros = daymacros;
+  nutritionPlan.planmacros = planmacros;
+  nutritionPlan.daysCount = updatedDays.length;
+  nutritionPlan.goal = goal;
+  nutritionPlan.dietType = dietType;
+  nutritionPlan.numberOfWeeks = numberOfWeeks;
+
+  await nutritionPlan.save();
+
   res.status(200).json({
     status: "success",
-    message: "Nutrition Plan updated successfully ",
-    data,
+    message: "NutritionPlan updated successfully",
+    data: nutritionPlan,
   });
 });
 
@@ -124,38 +170,18 @@ const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   });
 });
 
-// const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
-//   const id = req.params.id;
-//   const data = await nutritionModel
-//     .findById(id)
-//     .select(
-//       "planName description days plantype daymacros planmacros daysCount"
-//     );
-//   if (!data) {
-//     return next(new AppError("No nutrition plan found with that ID", 404));
-//   }
-
-//   res.status(200).json({
-//     status: "success",
-//     data,
-//   });
-// });
-
 const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   const data = await nutritionModel
     .findById(id)
     .select(
-      "planName description days plantype daymacros planmacros daysCount"
+      "planName dietType description days plantype daymacros planmacros daysCount  numberOfWeeks"
     );
 
   if (!data) {
     return next(new AppError("No nutrition plan found with that ID", 404));
   }
-
-  // Extract only the first 7 days
   const first7Days = data.days.slice(0, 7);
-
   res.status(200).json({
     status: "success",
     data: {
