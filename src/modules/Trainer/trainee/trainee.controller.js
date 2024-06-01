@@ -873,19 +873,19 @@ const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
     const formattedAssessments = assessments.map((assessment) => ({
       weight: {
         value: assessment.weight,
-        date: assessment.createdAt
+        created: assessment.createdAt
       },
       bodyFat: {
         value: assessment.bodyFat,
-        date: assessment.createdAt
+        created: assessment.createdAt
       },
       waistArea: {
         value: assessment.waistArea,
-        date: assessment.createdAt
+        created: assessment.createdAt
       },
       neckArea: {
         value: assessment.neckArea,
-        date: assessment.createdAt
+        created: assessment.createdAt
       },
     }));
 
