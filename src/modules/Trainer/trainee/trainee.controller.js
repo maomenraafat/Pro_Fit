@@ -777,7 +777,7 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
 
   // Calculate hours and minutes slept
   const duration = moment.duration(
-    moment(latestSleepData.wakeUpTime).diff(
+    latestSleepData.wakeUpTime).diff(
       moment(latestSleepData.fallAsleepTime)
     )
   );
@@ -832,7 +832,7 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   const formattedProgressEntries = progress.map(entry => ({
     _id: entry._id,
     photo: entry.image,
-    createdAt: entry.createdAt  // Assuming you want to keep the original createdAt format
+    createdAt: entry.createdAt  
   }));
 
   res.status(200).json({
@@ -873,19 +873,19 @@ const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
     const formattedAssessments = assessments.map((assessment) => ({
       weight: {
         value: assessment.weight,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        date: assessment.createdAt
       },
       bodyFat: {
         value: assessment.bodyFat,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        date: assessment.createdAt
       },
       waistArea: {
         value: assessment.waistArea,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        date: assessment.createdAt
       },
       neckArea: {
         value: assessment.neckArea,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        date: assessment.createdAt
       },
     }));
 
