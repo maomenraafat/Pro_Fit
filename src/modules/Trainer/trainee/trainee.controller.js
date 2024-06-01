@@ -821,19 +821,18 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   if (trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
-      message:
-        "You are not authorized to view the progress entries for this trainee.",
+      message: "You are not authorized to view the progress entries for this trainee.",
     });
   }
 
   // Retrieve all progress entries for the trainee
   const progress = await progressModel.find({ trainee: id });
 
-  // Format the response to contain progressId, image, and formatted createdAt date
-  const formattedProgressEntries = progress.map((entry) => ({
-    progressId: entry._id,
-    image: entry.image,
-    createdAt: moment(entry.createdAt).format("D MMMM, YYYY"),
+  // Format the response to contain _id, photo, and formatted createdAt date like getProgressPhoto
+  const formattedProgressEntries = progress.map(entry => ({
+    _id: entry._id,
+    photo: entry.image,
+    createdAt: entry.createdAt  // Assuming you want to keep the original createdAt format
   }));
 
   res.status(200).json({
@@ -842,6 +841,7 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
     data: formattedProgressEntries,
   });
 });
+
 const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
   async (req, res) => {
     const trainerId = req.user.payload.id;
