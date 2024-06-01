@@ -7,27 +7,29 @@ import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
 // Fetch all messages in a conversation
 const getMessages = catchAsyncError(async (req, res, next) => {
   const { conversationId } = req.params;
+  const  userId  = req.user.payload.id; 
 
   const messages = await messageModel
     .find({ conversationId })
     .populate("sender", "firstName lastName email profilePhoto");
 
-  if (!messages.length) {
-    return next(new AppError("No messages found", 404));
-  }
-
-  const formattedMessages = messages.map(message => ({
-    id: message._id,
+    console.log(userId);
+  // Instead of returning an error, just prepare an empty array if no messages are found
+  const formattedMessages = messages.length > 0 ? messages.map(message => ({
+    _id: message._id,
     content: message.content,
     images: message.images,
-    time: message.createdAt.toISOString(), // Formatting time in ISO
     sender: {
-      id: message.sender._id,
-      name: `${message.sender.firstName} ${message.sender.lastName}`,
+      _id: message.sender._id,
+      firstName: message.sender.firstName,
+      lastName: message.sender.lastName,
       email: message.sender.email,
-      profilePhoto: message.sender.profilePhoto || "defaultProfilePhotoUrl", // Use a default if needed
+      profilePhoto: message.sender.profilePhoto || "defaultProfilePhotoUrl",
     },
-  }));
+    userId: userId,
+    createdAt: message.createdAt.toISOString(),
+    updatedAt: message.updatedAt.toISOString(),
+  })) : [];
 
   res.status(200).json({
     success: true,
@@ -35,7 +37,6 @@ const getMessages = catchAsyncError(async (req, res, next) => {
     data: formattedMessages,
   });
 });
-
 // Send a message in a conversation
 const sendMessage = catchAsyncError(async (req, res, next) => {
   const { conversationId } = req.params;
