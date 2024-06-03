@@ -250,8 +250,18 @@ const nutritionSchema = new Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+nutritionSchema.virtual("isFavorite", {
+  ref: "FavoriteDietPlan",
+  localField: "_id",
+  foreignField: "dietPlan",
+  justOne: false,
+  count: true,
+});
 
 export const nutritionModel = model("nutrition", nutritionSchema);
 

@@ -45,16 +45,17 @@ const getAllConversations = catchAsyncError(async (req, res, next) => {
     const participantInfo = participant ? participant.participantId : {};
 
     return {
-      id: conversation._id,
+      _id: conversation._id,
       participant: {
-        id: participantInfo._id,
-        name: participantInfo.firstName && participantInfo.lastName ? `${participantInfo.firstName} ${participantInfo.lastName}` : "Unknown",
-        profilePhoto: participantInfo.profilePhoto || "defaultProfilePhotoUrl", // Replace with default if needed
+        _id: participantInfo._id,
+        firstName: participantInfo.firstName ? participantInfo.firstName : "Unknown",
+        lastName: participantInfo.lastName? participantInfo.lastName : "Unknown",
+        profilePhoto: participantInfo.profilePhoto || "defaultProfilePhotoUrl",
         email: participantInfo.email || "unknown@example.com",
       },
       lastMessage: {
         content: lastMessageContent,
-        time: lastMessageTime
+        createdAt: lastMessageTime
       }
     };
   });

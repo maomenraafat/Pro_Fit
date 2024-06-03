@@ -748,10 +748,7 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     });
   }
 
-  if (
-    !trainee.assignedTrainer ||
-    trainee.assignedTrainer.toString() !== trainerId
-  ) {
+  if (!trainee.assignedTrainer || trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
       message: "You are not authorized to view this trainee's sleep data.",
@@ -759,9 +756,7 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
   }
 
   // Retrieve the latest sleep data for the trainee
-  const latestSleepData = await SleepTrack.findOne({ trainee: id })
-    .sort({ dateRecorded: -1 })
-    .limit(1);
+  const latestSleepData = await SleepTrack.findOne({ trainee: id }).sort({ dateRecorded: -1 }).limit(1);
 
   if (!latestSleepData) {
     const currentDate = new Date().toISOString();
@@ -775,12 +770,11 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     });
   }
 
-  // Calculate hours and minutes slept
-  const duration = moment.duration(
-    moment(latestSleepData.wakeUpTime).diff(
-      moment(latestSleepData.fallAsleepTime)
-    )
-  );
+  // Calculate hours and minutes slept using moment to handle durations
+  const fallAsleepMoment = moment(latestSleepData.fallAsleepTime);
+  const wakeUpMoment = moment(latestSleepData.wakeUpTime);
+  const duration = moment.duration(wakeUpMoment.diff(fallAsleepMoment));
+
   const hoursSlept = `${duration.hours()} hrs ${duration.minutes()} mins`;
 
   // Return the formatted data
@@ -790,12 +784,13 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     data: {
       _id: latestSleepData._id,
       hoursSlept,
-      fallAsleepTime: new Date(latestSleepData.fallAsleepTime).toISOString(),
-      wakeUpTime: new Date(latestSleepData.wakeUpTime).toISOString(),
-      dateRecorded: new Date(latestSleepData.dateRecorded).toISOString(),
+      fallAsleepTime: latestSleepData.fallAsleepTime.toISOString(),
+      wakeUpTime: latestSleepData.wakeUpTime.toISOString(),
+      dateRecorded: latestSleepData.dateRecorded.toISOString(),
     },
   });
 });
+
 
 const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   const { id } = req.params;
@@ -821,19 +816,18 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   if (trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
-      message:
-        "You are not authorized to view the progress entries for this trainee.",
+      message: "You are not authorized to view the progress entries for this trainee.",
     });
   }
 
   // Retrieve all progress entries for the trainee
   const progress = await progressModel.find({ trainee: id });
 
-  // Format the response to contain progressId, image, and formatted createdAt date
-  const formattedProgressEntries = progress.map((entry) => ({
-    progressId: entry._id,
-    image: entry.image,
-    createdAt: moment(entry.createdAt).format("D MMMM, YYYY"),
+  // Format the response to contain _id, photo, and formatted createdAt date like getProgressPhoto
+  const formattedProgressEntries = progress.map(entry => ({
+    _id: entry._id,
+    photo: entry.image,
+    createdAt: entry.createdAt  
   }));
 
   res.status(200).json({
@@ -842,6 +836,7 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
     data: formattedProgressEntries,
   });
 });
+
 const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
   async (req, res) => {
     const trainerId = req.user.payload.id;
@@ -873,19 +868,19 @@ const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
     const formattedAssessments = assessments.map((assessment) => ({
       weight: {
         value: assessment.weight,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        createdAt: assessment.createdAt
       },
       bodyFat: {
         value: assessment.bodyFat,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        createdAt: assessment.createdAt
       },
       waistArea: {
         value: assessment.waistArea,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        createdAt: assessment.createdAt
       },
       neckArea: {
         value: assessment.neckArea,
-        date: moment(assessment.createdAt).format("D MMMM, YYYY"),
+        createdAt: assessment.createdAt
       },
     }));
 

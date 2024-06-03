@@ -4,6 +4,8 @@ import { trainerModel } from "../../../../Database/models/Trainer.model.js";
 import { ClientTransformationModel } from "../../../../Database/models/clientTransformations.js";
 import { favouriteModel } from "../../../../Database/models/favouriteSchema.model.js";
 import mongoose from "mongoose";
+import { favoriteDietPlanModel } from "../../../../Database/models/favoriteDietPlan.model.js";
+import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
 
 const getAllTrainers = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
@@ -88,7 +90,7 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
         isFavorite: 1,
         averageRating: 1,
         subscribers: 1,
-        profilePhoto: 1
+        profilePhoto: 1,
       },
     },
     { $sort: { lowestPrice: sortDirection } },
@@ -180,6 +182,46 @@ const getClientTransformations = catchAsyncError(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: transformations,
+  });
+});
+
+const getNutritionFreePlansForTrainer = catchAsyncError(async (req, res, next) => {
+  const { trainerId } = req.params;
+  const traineeId = req.user.payload.id;
+
+  // Fetch all free diet plans for the specified trainer
+  const freePlans = await nutritionModel.find({ trainer: trainerId, plantype: "Free plan" })
+    .populate({
+      path: 'isFavorite',
+      match: { trainee: traineeId },
+      select: '_id'
+    });
+
+  // Check if there are no free plans found
+  if (freePlans.length === 0) {
+    return next(new AppError("No free diet plans found for this trainer", 404));
+  }
+
+  const responseData = freePlans.map(plan => ({
+    planName: plan.planName,
+    dietType: plan.dietType,
+    description: plan.description,
+    calories: plan.planmacros.calories,
+    proteins: plan.planmacros.proteins,
+    carbs: plan.planmacros.carbs,
+    fats: plan.planmacros.fats,
+    rating: 4.3,
+    reviewCount: 119,
+    goal: plan.goal || "Weight Loss", 
+    duration: `${plan.daysCount} Days`,
+    meals: plan.days.length,
+    isFavorite: !!plan.isFavorite.length,
+  }));
+
+  res.status(200).json({
+    success: true,
+    totalDocuments: freePlans.length,
+    data: responseData,
   });
 });
 
@@ -277,10 +319,74 @@ const toggleFavorite = catchAsyncError(async (req, res) => {
     isFavorite: true,
   });
 });
+
+const toggleFavoriteDietPlan = catchAsyncError(async (req, res) => {
+  const traineeId = req.user.payload.id;
+  const { dietPlanId } = req.params;
+
+  // Attempt to find an existing favorite diet plan
+  const isExist = await favoriteDietPlanModel.findOne({
+    trainee: traineeId,
+    dietPlan: dietPlanId,
+  });
+
+  // If it exists, remove it
+  if (isExist) {
+    await favoriteDietPlanModel.findByIdAndDelete(isExist._id);
+    return res.status(200).json({
+      success: true,
+      message: "Favorite diet plan removed successfully.",
+      isFavorite: false,
+    });
+  }
+
+  // If it does not exist, add it
+  await favoriteDietPlanModel.create({
+    trainee: traineeId,
+    dietPlan: dietPlanId,
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: "Favorite diet plan added successfully.",
+    isFavorite: true,
+  });
+});
+
+const getAllFavoriteDietPlans = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
+
+  // Retrieve all favorite diet plans for the trainee
+  const favoriteDietPlans = await favoriteDietPlanModel
+    .find({ trainee: traineeId })
+    .populate("dietPlan");
+
+  // Check if there are no favorite diet plans and return an appropriate message
+  if (favoriteDietPlans.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: "No favorite diet plans found.",
+      data: [],
+    });
+  }
+
+  // Send the response with the details of favorite diet plans
+  res.status(200).json({
+    success: true,
+    data: favoriteDietPlans.map((fav) => ({
+      ...fav.dietPlan.toObject(),
+      isFavorite: true 
+    })),
+  });
+});
+
 export {
   getAllTrainers,
   getTrainerAbout,
   getClientTransformations,
   toggleFavorite,
   getAllFavorites,
+  toggleFavoriteDietPlan,
+  getAllFavoriteDietPlans,
+  getNutritionFreePlansForTrainer
 };

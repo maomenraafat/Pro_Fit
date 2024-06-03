@@ -39,9 +39,9 @@ const getProgressPhoto = catchAsyncError(async (req, res) => {
 
   // Format the response to contain progressId, photo URL, and formatted createdAt date
   const formattedProgressEntries = progressEntries.map(entry => ({
-    progressId: entry._id,
+    _id: entry._id,
     photo: entry.image,
-    createdAt: moment(entry.createdAt).format('D MMM, YYYY')
+    createdAt: entry.createdAt
   }));
 
   res.status(200).json({
@@ -89,19 +89,19 @@ const getDietAssessmentMeasurements = catchAsyncError(async (req, res) => {
   const formattedAssessments = assessments.map(assessment => ({
     weight: {
       value: assessment.weight,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
+      createdAt: assessment.createdAt.toISOString()
     },
     bodyFat: {
       value: assessment.bodyFat,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
+      createdAt: assessment.createdAt.toISOString()
     },
     waistArea: {
       value: assessment.waistArea,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
+      createdAt: assessment.createdAt.toISOString()
     },
     neckArea: {
       value: assessment.neckArea,
-      date: moment(assessment.createdAt).format('D MMMM, YYYY')
+      createdAt: assessment.createdAt.toISOString()
     }
   }));
 

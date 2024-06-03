@@ -242,8 +242,8 @@ trainerSchema.virtual("isFavorite", {
   ref: "Favorite",
   localField: "_id",
   foreignField: "trainer",
-  justOne: false, // Set to false because one trainer can be favorited by many trainees
-  count: true, // Only get the number of documents that match
+  justOne: false, 
+  count: true, 
 });
 
 // trainerSchema.virtual("activeSubscribers").get(function () {
