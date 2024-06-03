@@ -4,7 +4,7 @@ import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicI
 import { traineeDietAssessmentModel } from "../../../../Database/models/traineeDietAssessment.model.js";
 import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
-
+import { format } from "date-fns";
 const calculateMacronutrients = async (trainee) => {
   if (
     !trainee ||
@@ -161,6 +161,30 @@ const getDietAssessmentsData = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ success: true, data });
 });
 
+const getDietAssessmentsList = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
+  const assessments = await traineeDietAssessmentModel
+    .find({ trainee: traineeId })
+    .select("createdAt _id");
+
+  const data = assessments.map((assessment) => ({
+    DietAssessmentId: assessment._id,
+    createdAt: format(new Date(assessment.createdAt), "EEEE, dd MMM yyyy"),
+    DietAssessmentData: "Personal Data - Body Measurements - Preferences",
+  }));
+
+  res.status(200).json({ success: true, data });
+});
+
+const getSpecificDietAssessment = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
+  const id = req.params.id;
+  const data = await traineeDietAssessmentModel.findById(id);
+  // if (!data) {
+  //   return next(new AppError("data not found", 404));
+  // }
+  res.status(200).json({ success: true, data });
+});
 const getDietAssessments = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
   const data = await traineeDietAssessmentModel.find({ trainee: traineeId });
@@ -280,4 +304,10 @@ const FillDietAssessment = catchAsyncError(async (req, res, next) => {
   });
 });
 
-export { getDietAssessments, FillDietAssessment, getDietAssessmentsData };
+export {
+  getDietAssessments,
+  FillDietAssessment,
+  getDietAssessmentsData,
+  getDietAssessmentsList,
+  getSpecificDietAssessment,
+};
