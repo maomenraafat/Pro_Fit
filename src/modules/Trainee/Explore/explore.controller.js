@@ -6,6 +6,7 @@ import { favouriteModel } from "../../../../Database/models/favouriteSchema.mode
 import mongoose from "mongoose";
 import { favoriteDietPlanModel } from "../../../../Database/models/favoriteDietPlan.model.js";
 import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
+import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 
 const getAllTrainers = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
@@ -233,19 +234,67 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   const favorites = await favoriteDietPlanModel.find({ trainee: traineeId });
   const favoriteIds = new Set(favorites.map(fav => fav.dietPlan.toString()));
 
-  // Fetch all free diet plans across all trainers
-  const freePlans = await nutritionModel.find({ plantype: "Free plan" })
-    .populate('trainer', 'firstName lastName profilePhoto');
+  // Get dietType and mealsCount from query parameters
+  const { dietType, mealsCount } = req.query;
 
+  // Start building the aggregation pipeline with a basic match for free plans
+  let pipeline = [
+    { $match: { plantype: "Free plan" } }
+  ];
+
+  // Filter by dietType if provided
+  if (dietType) {
+    pipeline.push({ $match: { dietType: dietType } });
+  }
+
+  // Calculate meals count per day in the days array
+  pipeline.push(
+    { $addFields: { "days.mealsCount": { $size: "$days.meals" } } },
+    { $unwind: "$days" }
+  );
+
+  // Filter by mealsCount if provided
+  if (mealsCount) {
+    pipeline.push({ $match: { "days.mealsCount": parseInt(mealsCount) } });
+  }
+
+  // Group the documents back after filtering by days
+  pipeline.push(
+    { $group: {
+      _id: "$_id",
+      root: { $mergeObjects: "$$ROOT" },
+      days: { $push: "$days" }
+    }},
+    { $replaceRoot: { newRoot: { $mergeObjects: ["$root", { days: "$days" }] } } }
+  );
+
+  // Add trainer details
+  pipeline.push(
+    {
+      $lookup: {
+        from: "trainers",
+        localField: "trainer",
+        foreignField: "_id",
+        as: "trainerDetails"
+      }
+    },
+    { $unwind: "$trainerDetails" }
+  );
+
+  // Execute the aggregation pipeline
+  const freePlans = await nutritionModel.aggregate(pipeline);
+
+  // Check if any plans were found
   if (freePlans.length === 0) {
     return res.status(404).json({
       success: false,
-      message: "No free diet plans found",
+      message: "No free diet plans found"
     });
   }
 
+  // Prepare the response data, including mealsCount from the first day
   const responseData = freePlans.map(plan => {
-    const trainer = plan.trainer;
+    const trainer = plan.trainerDetails;
     return {
       _id: plan._id,
       planName: plan.planName,
@@ -259,17 +308,18 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
       reviewCount: 119,
       goal: plan.goal || "Weight Loss",
       duration: `${plan.daysCount} Days`,
-      meals: plan.days.length,
+      mealsCount: plan.days[0].mealsCount, // Meals count from the first day
       isFavorite: favoriteIds.has(plan._id.toString()),
-      name: trainer ? `${trainer.firstName} ${trainer.lastName}` : null, 
-      profilePhoto: trainer ? trainer.profilePhoto : null 
+      name: trainer ? `${trainer.firstName} ${trainer.lastName}` : null,
+      profilePhoto: trainer ? trainer.profilePhoto : null
     };
   });
 
+  // Send successful response
   res.status(200).json({
     success: true,
     totalDocuments: freePlans.length,
-    data: responseData,
+    data: responseData
   });
 });
 
@@ -459,6 +509,73 @@ const getAllFavoriteDietPlans = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const getDailyNeeds = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id; 
+
+  // Fetch the trainee's basic information which includes daily macronutrient needs
+  const traineeData = await traineeModel.findById(traineeId)
+    .populate({
+      path: "traineeBasicInfo",
+      select: "dailymacros -_id" 
+    });
+
+  if (!traineeData || !traineeData.traineeBasicInfo) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee daily needs not found."
+    });
+  }
+
+  // Respond with the retrieved daily needs
+  res.status(200).json({
+    success: true,
+    data: traineeData.traineeBasicInfo.dailymacros
+  });
+});
+
+const getDietTypes = catchAsyncError(async (req, res, next) => {
+
+    const dietTypes = [
+      "Vegetarian",
+      "Vegan",
+      "Ketogenic",
+      "Paleo",
+      "Mediterranean",
+      "Standard"
+    ];
+
+    if (!dietTypes || dietTypes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Diet types not found."
+      });
+    }
+
+    // Respond with the list of diet types
+    res.status(200).json({
+      success: true,
+      data: dietTypes
+    });
+});
+
+const getMealsCounts = catchAsyncError(async (req, res, next) => {
+  // Define the list of meals counts
+  const mealsCounts = [1, 2, 3, 4, 5, 6, 7];
+
+  // Check if the list is not empty
+  if (!mealsCounts || mealsCounts.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "Meals counts not found."
+    });
+  }
+
+  // Respond with the list of meals counts
+  res.status(200).json({
+    success: true,
+    data: mealsCounts
+  });
+});
 // const getAllFavoriteDietPlans = catchAsyncError(async (req, res, next) => {
 //   const traineeId = req.user.payload.id;
 
@@ -495,5 +612,8 @@ export {
   toggleFavoriteDietPlan,
   getAllFavoriteDietPlans,
   getNutritionFreePlansForTrainer,
-  getAllNutritionFreePlans
+  getAllNutritionFreePlans,
+  getDailyNeeds,
+  getDietTypes,
+  getMealsCounts
 };

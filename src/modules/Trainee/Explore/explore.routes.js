@@ -12,5 +12,8 @@ traineeExploreRouter.post('/trainers/:trainerId/trainer-toggle-favorite', verify
 traineeExploreRouter.get("/favorites/trainers",verifyToken,allowedTo("trainee"),explore.getAllFavorites);
 traineeExploreRouter.post('/trainers/:dietPlanId/diet-toggle-favorite', verifyToken, allowedTo("trainee"), explore.toggleFavoriteDietPlan);
 traineeExploreRouter.get('/favorites/free-diet-plan', verifyToken, allowedTo("trainee"), explore.getAllFavoriteDietPlans);
+traineeExploreRouter.get('/trainers/daily-needs', verifyToken, allowedTo("trainee"), explore.getDailyNeeds);
+traineeExploreRouter.get('/trainers/diet-types', explore.getDietTypes);
+traineeExploreRouter.get('/trainers/meals-count', explore.getMealsCounts);
 
 export default traineeExploreRouter;
