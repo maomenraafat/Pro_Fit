@@ -3,7 +3,7 @@ import { traineeDietAssessmentModel } from "../../../../Database/models/traineeD
 import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
 import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
-import { toCairoTimeString, toCairoDate } from "../../../utils/dateUtils.js";
+//import { toCairoTimeString, toCairoDate } from "../../../utils/dateUtils.js";
 import { freeDietPlanSubscription } from "../../../../Database/models/freeDietPlanSubscription.model.js";
 
 function calculateConsumedMacros(plan) {
