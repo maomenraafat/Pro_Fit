@@ -4,12 +4,24 @@ import * as Diet from "./Diet.controller.js";
 import { allowedTo, verifyToken } from "../../../middlewares/authToken.js";
 
 DietRouter.get(
-  "/getCustomizeDietPlan",
+  "/getDietPlan",
   verifyToken,
   allowedTo("trainee"),
-  Diet.getCustomizeDietPlan
+  Diet.getDietPlan
 );
 
+// DietRouter.get(
+//   "/getCustomizeDietPlan",
+//   verifyToken,
+//   allowedTo("trainee"),
+//   Diet.getCustomizeDietPlan
+// );
+// DietRouter.get(
+//   "/getSubscribedFreeDietPlan",
+//   verifyToken,
+//   allowedTo("trainee"),
+//   Diet.getSubscribedFreeDietPlan
+// );
 DietRouter.get(
   "/getFreeDietPlans",
   verifyToken,
@@ -28,15 +40,9 @@ DietRouter.post(
   allowedTo("trainee"),
   Diet.subscribeToFreeDietPlan
 );
-DietRouter.get(
-  "/getSubscribedFreeDietPlan",
-  verifyToken,
-  allowedTo("trainee"),
-  Diet.getSubscribedFreeDietPlan
-);
 
 DietRouter.patch(
-  "/updateFoodConsumedStatus",
+  "/updateFoodConsumedStatus/:id",
   verifyToken,
   allowedTo("trainee"),
   Diet.updateFoodConsumedStatus

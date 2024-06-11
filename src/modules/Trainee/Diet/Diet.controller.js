@@ -139,43 +139,74 @@ const subscribeToFreeDietPlan = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ success: true, data: existingSubscription });
 });
 
-const getSubscribedFreeDietPlan = catchAsyncError(async (req, res, next) => {
-  const traineeId = req.user.payload.id;
-  const subscribedPlans = await freeDietPlanSubscription.find({
-    trainee: traineeId,
-  });
-  //.populate("dietPlan");
+// const getSubscribedFreeDietPlan = catchAsyncError(async (req, res, next) => {
+//   const traineeId = req.user.payload.id;
+//   const subscribedPlans = await freeDietPlanSubscription.find({
+//     trainee: traineeId,
+//   });
+//   //.populate("dietPlan");
 
-  res.status(200).json({ success: true, data: subscribedPlans });
-});
+//   res.status(200).json({ success: true, data: subscribedPlans });
+// });
 
-const getCustomizeDietPlan = catchAsyncError(async (req, res, next) => {
+// const getCustomizeDietPlan = catchAsyncError(async (req, res, next) => {
+//   const traineeId = req.user.payload.id;
+//   // const id = req.params.id;
+//   const data = await nutritionModel.findOne({
+//     trainee: traineeId,
+//     //trainer: id,
+//     status: "Current",
+//     plantype: "Customized plan",
+//   });
+//   if (!data) {
+//     // return next(new AppError("data not found", 404));
+//     res
+//       .status(200)
+//       .json({ success: true, message: "You Did not Have Customized plan" });
+//   }
+//   const macros = calculateConsumedMacros(data);
+//   res.status(200).json({ success: true, data /*macros*/ });
+// });
+
+const getDietPlan = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
-  // const id = req.params.id;
-  const data = await nutritionModel.findOne({
+
+  const customizedPlan = await nutritionModel.findOne({
     trainee: traineeId,
-    //trainer: id,
     status: "Current",
     plantype: "Customized plan",
   });
-  if (!data) {
-    // return next(new AppError("data not found", 404));
-    res
-      .status(200)
-      .json({ success: true, message: "You Did not Have Customized plan" });
-  }
-  const macros = calculateConsumedMacros(data);
-  res.status(200).json({ success: true, data, macros });
-});
 
+  if (customizedPlan) {
+    return res
+      .status(200)
+      .json({ success: true, data: customizedPlan /*macros*/ });
+  }
+
+  const subscribedPlans = await freeDietPlanSubscription.find({
+    trainee: traineeId,
+  });
+
+  if (subscribedPlans.length > 0) {
+    return res.status(200).json({ success: true, data: subscribedPlans });
+  }
+
+  return res
+    .status(200)
+    .json({ success: true, message: "No diet plans found for this trainee" });
+});
 /*updateFoodConsumedStatus*/
 const updateFoodConsumedStatus = catchAsyncError(async (req, res, next) => {
-  const { planId, dayIndex, mealIndex, foods, markMeal } = req.body;
+  const planId = req.params.id;
+  const { dayIndex, mealIndex, foods, markMeal } = req.body;
 
-  const plan = await nutritionModel.findById(planId);
+  let plan = await nutritionModel.findById(planId);
 
   if (!plan) {
-    return next(new AppError("Nutrition plan not found", 404));
+    plan = await freeDietPlanSubscription.findById(planId);
+    if (!plan) {
+      return next(new AppError("Nutrition plan not found", 404));
+    }
   }
 
   if (!isValidMealIndex(plan, dayIndex, mealIndex)) {
@@ -215,14 +246,16 @@ const updateFoodConsumedStatus = catchAsyncError(async (req, res, next) => {
 
       const foodItem = plan.days[dayIndex].meals[mealIndex].foods[foodIndex];
 
-      console.log("Before update:", foodItem);
+      if (foodItem.consumed !== consumed) {
+        //console.log("Before update:", foodItem);
 
-      foodItem.consumed = consumed;
-      if (foodItem.macros) {
-        updateEatenDaysMacros(plan.days[dayIndex], foodItem.macros, consumed);
+        foodItem.consumed = consumed;
+        if (foodItem.macros) {
+          updateEatenDaysMacros(plan.days[dayIndex], foodItem.macros, consumed);
+        }
+
+        //console.log("After update:", foodItem);
       }
-
-      console.log("After update:", foodItem);
     });
 
     if (areAllFoodsConsumed(plan.days[dayIndex].meals[mealIndex].foods)) {
@@ -246,7 +279,7 @@ const updateFoodConsumedStatus = catchAsyncError(async (req, res, next) => {
 
   await plan.save();
 
-  console.log("Plan after save:", plan);
+  //console.log("Plan after save:", plan);
 
   return res.status(200).json({
     success: true,
@@ -289,7 +322,8 @@ export {
   getFreeDietPlans,
   dietPlanOverview,
   subscribeToFreeDietPlan,
-  getSubscribedFreeDietPlan,
-  getCustomizeDietPlan,
+  getDietPlan,
+  //getSubscribedFreeDietPlan,
+  // getCustomizeDietPlan,
   updateFoodConsumedStatus,
 };
