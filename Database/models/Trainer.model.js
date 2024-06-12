@@ -242,8 +242,8 @@ trainerSchema.virtual("isFavorite", {
   ref: "Favorite",
   localField: "_id",
   foreignField: "trainer",
-  justOne: false, 
-  count: true, 
+  justOne: false,
+  count: true,
 });
 
 // trainerSchema.virtual("activeSubscribers").get(function () {
