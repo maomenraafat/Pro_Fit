@@ -8,6 +8,7 @@ import { SubscriptionModel } from "../../../../Database/models/subscription.mode
 import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 import { reviewModel } from "../../../../Database/models/review.model.js";
 import { traineeModel } from "../../../../Database/models/Trainee.model.js";
+import { getReviewsData } from "../../../utils/factor.js";
 
 async function validateAndUpdateTrainer(id, statusUpdate, acceptPolicy) {
   const data = await trainerModel.findById(id);
@@ -211,6 +212,7 @@ const submitionrequests = catchAsyncError(async (req, res, next) => {
 //     data: trainerData,
 //   });
 // });
+
 const getTrainerData = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
   const trainer = await trainerModel
@@ -288,63 +290,13 @@ const updateTrainerAbout = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+
 const getAllReviews = catchAsyncError(async (req, res) => {
   const trainerId = req.user.payload.id;
   const { traineeId } = req.params;
-  const reviews = await reviewModel
-    .find({ trainer: trainerId })
-    .populate({ path: "trainee", select: "firstName lastName profilePhoto" });
 
-  if (reviews.length === 0) {
-    return res.status(200).json({
-      success: true,
-      message: "No reviews found for this trainer.",
-      data: {
-        reviews: [],
-        averageRating: 0,
-        ratingsDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-      },
-    });
-  }
-
-  const averageRating = (
-    reviews.reduce((acc, item) => acc + item.rating, 0) / reviews.length
-  ).toFixed(1);
-  let ratingsDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  reviews.forEach((review) => ratingsDistribution[review.rating]++);
-
-  Object.keys(ratingsDistribution).forEach((key) => {
-    ratingsDistribution[key] = parseInt(
-      ((ratingsDistribution[key] / reviews.length) * 100).toFixed(0)
-    );
-  });
-
-  const formattedReviews = reviews
-    .map((review) => ({
-      rating: review.rating,
-      comment: review.comment,
-      date: review.createdAt,
-      // date: review.createdAt.toLocaleDateString("en-US", {
-      //   day: "numeric",
-      //   month: "long",
-      //   year: "numeric",
-      // }),
-      firstName: review.trainee.firstName,
-      lastName: review.trainee.lastName,
-      // traineeName: `${review.trainee.firstName} ${review.trainee.lastName}`,
-      profilePhoto: review.trainee.profilePhoto,
-      isCurrentUser: review.trainee._id.toString() === traineeId,
-    }))
-    .sort((a, b) => b.isCurrentUser - a.isCurrentUser);
-
-  res.status(200).json({
-    success: true,
-    data: {
-      averageRating: Number(averageRating),
-      ratingsDistribution,
-      reviews: formattedReviews,
-    },
-  });
+  const reviewData = await getReviewsData(trainerId, traineeId);
+  res.status(200).json(reviewData);
 });
 
 const getAllSubscriptions = catchAsyncError(async (req, res, next) => {

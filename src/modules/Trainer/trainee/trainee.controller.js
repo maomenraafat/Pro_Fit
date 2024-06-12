@@ -12,6 +12,7 @@ import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
 import moment from "moment";
+import { getNutritionPlanData } from "../../../utils/factor.js";
 
 const getActiveTrainees = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
@@ -475,6 +476,27 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.params.id;
+
+  if (!traineeId) {
+    return res.status(400).json({ message: "Trainee ID is required" });
+  }
+  const nutritionData = await getNutritionPlanData(traineeId);
+  res.status(200).json({
+    success: true,
+    message: "Successfully retrieved nutrition tracking data",
+    data: {
+      Diet: nutritionData,
+      Workout: {
+        totalExercises: 0,
+        totalExercisesDone: 0,
+        percentage: 0,
+      },
+    },
+  });
+});
+
 const updateTraineeWaterGoal = catchAsyncError(async (req, res) => {
   const traineeId = req.params.id;
   const trainerId = req.user.payload.id;
@@ -748,7 +770,10 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
     });
   }
 
-  if (!trainee.assignedTrainer || trainee.assignedTrainer.toString() !== trainerId) {
+  if (
+    !trainee.assignedTrainer ||
+    trainee.assignedTrainer.toString() !== trainerId
+  ) {
     return res.status(403).json({
       success: false,
       message: "You are not authorized to view this trainee's sleep data.",
@@ -756,7 +781,9 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
   }
 
   // Retrieve the latest sleep data for the trainee
-  const latestSleepData = await SleepTrack.findOne({ trainee: id }).sort({ dateRecorded: -1 }).limit(1);
+  const latestSleepData = await SleepTrack.findOne({ trainee: id })
+    .sort({ dateRecorded: -1 })
+    .limit(1);
 
   if (!latestSleepData) {
     const currentDate = new Date().toISOString();
@@ -791,7 +818,6 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
   });
 });
 
-
 const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   const { id } = req.params;
   const trainerId = req.user.payload.id;
@@ -816,7 +842,8 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   if (trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to view the progress entries for this trainee.",
+      message:
+        "You are not authorized to view the progress entries for this trainee.",
     });
   }
 
@@ -824,10 +851,10 @@ const getTraineeProgressForTrainer = catchAsyncError(async (req, res) => {
   const progress = await progressModel.find({ trainee: id });
 
   // Format the response to contain _id, photo, and formatted createdAt date like getProgressPhoto
-  const formattedProgressEntries = progress.map(entry => ({
+  const formattedProgressEntries = progress.map((entry) => ({
     _id: entry._id,
     photo: entry.image,
-    createdAt: entry.createdAt  
+    createdAt: entry.createdAt,
   }));
 
   res.status(200).json({
@@ -868,19 +895,19 @@ const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
     const formattedAssessments = assessments.map((assessment) => ({
       weight: {
         value: assessment.weight,
-        createdAt: assessment.createdAt
+        createdAt: assessment.createdAt,
       },
       bodyFat: {
         value: assessment.bodyFat,
-        createdAt: assessment.createdAt
+        createdAt: assessment.createdAt,
       },
       waistArea: {
         value: assessment.waistArea,
-        createdAt: assessment.createdAt
+        createdAt: assessment.createdAt,
       },
       neckArea: {
         value: assessment.neckArea,
-        createdAt: assessment.createdAt
+        createdAt: assessment.createdAt,
       },
     }));
 
@@ -909,6 +936,7 @@ export {
   createTraineeCustomizePlan,
   makeRequestAssessment,
   getTraineesSubscription,
+  trackingTraineePlans,
   updateTraineeWaterGoal,
   getTraineeWaterIntakeForTrainer,
   getTraineeLatestHeartRateRecord,

@@ -56,6 +56,12 @@ trainerTraineesRouter.get(
   allowedTo("trainer"),
   trainee.getTraineesSubscription
 );
+trainerTraineesRouter.get(
+  "/trackingTraineePlans/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.trackingTraineePlans
+);
 
 // GET endpoint for trainer to view a trainee's water intake details
 trainerTraineesRouter.get(

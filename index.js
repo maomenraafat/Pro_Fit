@@ -13,6 +13,7 @@ import trainerAuthRoutes from "./src/modules/Trainer/Auth/auth.routes.js";
 import adminAuthRouter from "./src/modules/Admin/Auth/auth.routes.js";
 import trainerClientTransformationsRoutes from "./src/modules/Trainer/ClientTransformations/ClientTransformations.routes.js";
 import trainerpackagesRoutes from "./src/modules/Trainer/Package/Package.routes.js";
+import trainerDashboardRoutes from "./src/modules/Trainer/Dashboard/Dashboard.routes.js";
 import qualificationAndAchievementRoutes from "./src/modules/Trainer/QualificationAndAchievement/QualificationAndAchievement.routes.js";
 import adminTrainerRouter from "./src/modules/Admin/trainer/trainer.routes.js";
 import FoodRouter from "./src/modules/Food/Food.routes.js";
@@ -26,6 +27,7 @@ import tranieeheartRate from "./src/modules/Trainee/Home/Heart Rate/heartRate.ro
 import tranieeRecordSteps from "./src/modules/Trainee/Home/Record Steps/recordSteps.routes.js";
 import traineeWaterIntake from "./src/modules/Trainee/Home/Water Intake/waterIntake.routes.js";
 import DietAssessmentRouter from "./src/modules/Trainee/DietAssessment/DietAssessment.routes.js";
+import tranieeplansTracking from "./src/modules/Trainee/Home/Plans Tracking/PlansTracking.routes.js";
 import traineeChallengeRouter from "./src/modules/Trainee/Home/Challenges/challenge.routes.js";
 import traineesleepingTrack from "./src/modules/Trainee/Home/Sleeping Track/sleepTrack.routes.js";
 import DietRouter from "./src/modules/Trainee/Diet/Diet.routes.js";
@@ -33,7 +35,8 @@ import trainerTraineesRouter from "./src/modules/Trainer/trainee/trainee.routes.
 import trainerChallengeRouter from "./src/modules/Trainer/Challenges/challenge.routes.js";
 import traineeProgressRouter from "./src/modules/Trainee/Progress/progress.routes.js";
 import conversationRouter from "./src/modules/Conversation/conversation.routes.js";
-import messageRouter from './src/modules/Message/message.routes.js';
+import messageRouter from "./src/modules/Message/message.routes.js";
+import adminDashboardRoutes from "./src/modules/Admin/Dashboard/Dashboard.routes.js";
 const app = express();
 const port = 4000;
 app.use(cors());
@@ -42,6 +45,7 @@ app.use("/uploads", express.static("src/uploads"));
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/admin/auth", adminAuthRouter);
 app.use("/api/v1/admin/trainers", adminTrainerRouter);
+app.use("/api/v1/admin/Dashboard", adminDashboardRoutes);
 app.use("/api/v1/trainers/auth", trainerAuthRoutes);
 app.use(
   "/api/v1/trainers/ClientTransformations",
@@ -52,6 +56,7 @@ app.use(
   qualificationAndAchievementRoutes
 );
 app.use("/api/v1/trainers/packages", trainerpackagesRoutes);
+app.use("/api/v1/trainers/Dashboard", trainerDashboardRoutes);
 app.use("/api/v1/trainers", trainerRouter);
 app.use("/api/v1/trainers/trainees", trainerTraineesRouter);
 app.use("/api/v1/trainers/trainees/challenge", trainerChallengeRouter);
@@ -62,6 +67,7 @@ app.use("/api/v1/trainees", traineeReviewRouter);
 app.use("/api/v1/trainees/heart-rate", tranieeheartRate);
 app.use("/api/v1/trainees/steps", tranieeRecordSteps);
 app.use("/api/v1/trainees/water", traineeWaterIntake);
+app.use("/api/v1/trainees/plansTracking", tranieeplansTracking);
 app.use("/api/v1/trainees/challenge", traineeChallengeRouter);
 app.use("/api/v1/trainees/progress", traineeProgressRouter);
 app.use("/api/v1/trainees/sleeping-track", traineesleepingTrack);
