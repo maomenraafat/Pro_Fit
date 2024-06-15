@@ -61,7 +61,10 @@ class Dashboard {
   }
 
   async getPackagesWithSubscriptions() {
-    const packages = await PackageModel.find({ trainerId: this.trainerId });
+    const packages = await PackageModel.find({
+      trainerId: this.trainerId,
+      active: true,
+    });
     let total = 0;
     const packagesWithDetails = await Promise.all(
       packages.map(async (pkg) => {
