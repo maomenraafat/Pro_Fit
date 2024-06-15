@@ -4,7 +4,7 @@ import { Server as SocketIO } from 'socket.io';
 import { verifyTokenSocket } from '../src/middlewares/authToken.js';
 import { conversationModel } from '../Database/models/conversation.model.js';
 import { messageModel } from '../Database/models/message.model.js';
-import { uploadImageToCloudinary } from '../src/utils/cloudinary.js'; // Assuming you have this utility function
+import { uploadImageToCloudinary } from '../src/utils/cloudinary.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -34,7 +34,8 @@ io.on('connection', (socket) => {
       if (images && images.length > 0) {
         const folderName = `Messages/${conversationId}`;
         for (const image of images) {
-          const uploadResult = await uploadImageToCloudinary(image, folderName);
+          const buffer = Buffer.from(image, 'base64');
+          const uploadResult = await uploadImageToCloudinary(buffer, folderName);
           if (uploadResult) {
             imageUrls.push(uploadResult.url);
           }
