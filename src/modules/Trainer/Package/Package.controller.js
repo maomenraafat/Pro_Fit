@@ -5,6 +5,36 @@ import { PackageModel } from "../../../../Database/models/Package.model.js";
 import { AppError } from "../../../utils/AppError.js";
 import { ApiFeatures } from "../../../utils/ApiFeatures.js";
 
+// const addPackage = catchAsyncError(async (req, res, next) => {
+//   const trainerId = req.user.payload.id;
+//   const {
+//     packageName,
+//     packageType,
+//     description,
+//     price,
+//     duration,
+//     subscribersLimit,
+//     active,
+//   } = req.body;
+//   const data = {
+//     trainerId,
+//     packageName,
+//     packageType,
+//     description,
+//     price,
+//     duration,
+//     subscribersLimit,
+//     active,
+//   };
+//   const newpackage = new PackageModel(data);
+//   await newpackage.save();
+//   res.status(201).json({
+//     success: true,
+//     message: "Package created successfully",
+//     newpackage,
+//   });
+// });
+
 const addPackage = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const {
@@ -16,6 +46,21 @@ const addPackage = catchAsyncError(async (req, res, next) => {
     subscribersLimit,
     active,
   } = req.body;
+
+  // Check if the trainer already has 4 active packages
+  if (active) {
+    const activePackagesCount = await PackageModel.countDocuments({
+      trainerId,
+      active: true,
+    });
+    if (activePackagesCount >= 4) {
+      return res.status(400).json({
+        success: true,
+        message: "You can only have up to 4 active packages.",
+      });
+    }
+  }
+
   const data = {
     trainerId,
     packageName,
@@ -26,14 +71,15 @@ const addPackage = catchAsyncError(async (req, res, next) => {
     subscribersLimit,
     active,
   };
-  const newpackage = new PackageModel(data);
-  await newpackage.save();
+  const newPackage = new PackageModel(data);
+  await newPackage.save();
   res.status(201).json({
     success: true,
     message: "Package created successfully",
-    newpackage,
+    newPackage,
   });
 });
+
 const getSpecificPackage = catchAsyncError(async (req, res, next) => {
   //const trainerId = req.user.payload.id;
   const id = req.params.id;
@@ -87,21 +133,60 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
   });
 });
 
+// const updatePackage = catchAsyncError(async (req, res, next) => {
+//   const trainerId = req.user.payload.id;
+//   const id = req.params.id;
+//   // const {
+//   //   packageName,
+//   //   packageType,
+//   //   description,
+//   //   price,
+//   //   duration,
+//   //   subscribersLimit,
+//   // } = req.body;
+//   const newpackage = await PackageModel.findOneAndUpdate(
+//     {
+//       _id: id,
+//       trainerId: trainerId,
+//     },
+//     req.body,
+//     {
+//       new: true,
+//       runValidators: true,
+//     }
+//   );
+
+//   res.status(201).json({
+//     success: true,
+//     message: "Package updated successfully",
+//     newpackage,
+//   });
+// });
+
 const updatePackage = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
-  // const {
-  //   packageName,
-  //   packageType,
-  //   description,
-  //   price,
-  //   duration,
-  //   subscribersLimit,
-  // } = req.body;
-  const newpackage = await PackageModel.findOneAndUpdate(
+  const { active } = req.body;
+
+  // Check if the trainer already has 4 active packages
+  if (active) {
+    const activePackagesCount = await PackageModel.countDocuments({
+      trainerId,
+      active: true,
+      _id: { $ne: id }, // Exclude the package being updated
+    });
+    if (activePackagesCount >= 4) {
+      return res.status(400).json({
+        success: true,
+        message: "You can only have up to 4 active packages.",
+      });
+    }
+  }
+
+  const updatedPackage = await PackageModel.findOneAndUpdate(
     {
       _id: id,
-      trainerId: trainerId,
+      trainerId,
     },
     req.body,
     {
@@ -110,12 +195,13 @@ const updatePackage = catchAsyncError(async (req, res, next) => {
     }
   );
 
-  res.status(201).json({
+  res.status(200).json({
     success: true,
     message: "Package updated successfully",
-    newpackage,
+    updatedPackage,
   });
 });
+
 const deletePackage = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
