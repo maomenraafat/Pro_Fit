@@ -9,12 +9,12 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const generateImageHash = (filePath) => {
-  const fileBuffer = readFileSync(filePath);
-  const hashSum = createHash("sha256");
-  hashSum.update(fileBuffer);
-  return hashSum.digest("hex");
-};
+// const generateImageHash = (filePath) => {
+//   const fileBuffer = readFileSync(filePath);
+//   const hashSum = createHash("sha256");
+//   hashSum.update(fileBuffer);
+//   return hashSum.digest("hex");
+// };
 
 // const uploadImageToCloudinary = async (file, folderName, existingImageHash) => {
 //   const newImageHash = generateImageHash(file.path);
@@ -44,36 +44,47 @@ const generateImageHash = (filePath) => {
 //   }
 // };
 
-const uploadImageToCloudinary = async (buffer, folderName, existingImageHash) => {
-  const newImageHash = generateImageHash(buffer);
+const generateImageHash = (input) => {
+  let fileBuffer;
+  if (Buffer.isBuffer(input)) {
+    fileBuffer = input;
+  } else {
+    fileBuffer = readFileSync(input);
+  }
+  const hashSum = createHash("sha256");
+  hashSum.update(fileBuffer);
+  return hashSum.digest("hex");
+};
+
+const uploadImageToCloudinary = async (input, folderName, existingImageHash) => {
+  const newImageHash = generateImageHash(input);
 
   if (newImageHash === existingImageHash) {
     console.log("Image is the same as the existing one. Skipping upload.");
+    if (!Buffer.isBuffer(input)) {
+      unlinkSync(input);
+    }
     return null;
   }
 
   try {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: folderName, resource_type: "auto" },
-      (error, result) => {
-        if (error) {
-          console.error("Upload failed:", error);
-          throw new Error("Failed to upload image to Cloudinary: " + error.message);
-        }
-        return result;
-      }
-    );
-
-    streamifier.createReadStream(buffer).pipe(uploadStream);
-
     return new Promise((resolve, reject) => {
-      uploadStream.on('finish', (result) => {
-        resolve({ url: result.secure_url, hash: newImageHash });
-      });
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: folderName, resource_type: "auto" },
+        (error, result) => {
+          if (error) {
+            console.error("Upload failed:", error);
+            return reject(new Error("Failed to upload image to Cloudinary: " + error.message));
+          }
+          resolve({ url: result.secure_url, hash: newImageHash });
+        }
+      );
 
-      uploadStream.on('error', (error) => {
-        reject(new Error("Failed to upload image to Cloudinary: " + error.message));
-      });
+      if (Buffer.isBuffer(input)) {
+        streamifier.createReadStream(input).pipe(uploadStream);
+      } else {
+        streamifier.createReadStream(readFileSync(input)).pipe(uploadStream);
+      }
     });
   } catch (error) {
     console.error("Upload failed:", error);
