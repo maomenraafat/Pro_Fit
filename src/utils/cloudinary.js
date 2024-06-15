@@ -44,20 +44,11 @@ const generateImageHash = (filePath) => {
 //   }
 // };
 
-const uploadImageToCloudinary = async (file, folderName, existingImageHash) => {
-  let buffer, newImageHash;
-
-  if (Buffer.isBuffer(file)) {
-    buffer = file;
-    newImageHash = generateImageHash(buffer);
-  } else {
-    buffer = readFileSync(file.path);
-    newImageHash = generateImageHash(buffer);
-  }
+const uploadImageToCloudinary = async (buffer, folderName, existingImageHash) => {
+  const newImageHash = generateImageHash(buffer);
 
   if (newImageHash === existingImageHash) {
     console.log("Image is the same as the existing one. Skipping upload.");
-    if (!Buffer.isBuffer(file)) unlinkSync(file.path);
     return null;
   }
 
@@ -69,20 +60,21 @@ const uploadImageToCloudinary = async (file, folderName, existingImageHash) => {
           console.error("Upload failed:", error);
           throw new Error("Failed to upload image to Cloudinary: " + error.message);
         }
-        if (result) {
-          if (!Buffer.isBuffer(file)) unlinkSync(file.path);
-          return { url: result.secure_url, hash: newImageHash };
-        }
-        return null;
+        return result;
       }
     );
 
-    if (Buffer.isBuffer(file)) {
-      uploadStream.end(buffer);
-    } else {
-      const fileStream = readFileSync(file.path);
-      uploadStream.end(fileStream);
-    }
+    streamifier.createReadStream(buffer).pipe(uploadStream);
+
+    return new Promise((resolve, reject) => {
+      uploadStream.on('finish', (result) => {
+        resolve({ url: result.secure_url, hash: newImageHash });
+      });
+
+      uploadStream.on('error', (error) => {
+        reject(new Error("Failed to upload image to Cloudinary: " + error.message));
+      });
+    });
   } catch (error) {
     console.error("Upload failed:", error);
     throw new Error("Failed to upload image to Cloudinary: " + error.message);
