@@ -137,10 +137,33 @@ const checkIfAlreadySubscribed = async (req, res, next) => {
   }
 };
 
+const verifyTokenSocket = (socket, next) => {
+  const token = socket.handshake.auth.token;
+
+  console.log('Token:', token);
+
+  if (!token) {
+    return next(new Error('Authentication error: No token provided'));
+  }
+
+  jwt.verify(token, SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return next(new Error('Authentication error: Invalid token'));
+    }
+
+    if (!decoded || !decoded.payload) {
+      return next(new Error('Authentication error: Invalid token structure'));
+    }
+
+    socket.user = decoded.payload;
+    next();
+  });
+};
 export {
   verifyToken,
   generateToken,
   allowedTo,
   restrictAccess,
   checkIfAlreadySubscribed,
+  verifyTokenSocket
 };

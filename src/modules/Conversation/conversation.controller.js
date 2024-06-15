@@ -18,6 +18,7 @@ const getAllConversations = catchAsyncError(async (req, res, next) => {
     select: "content createdAt",
   });
 
+  console.log(conversations);
   if (!conversations.length) {
     return next(new AppError("No conversations found", 404));
   }
@@ -66,8 +67,6 @@ const getAllConversations = catchAsyncError(async (req, res, next) => {
     data: formattedConversations,
   });
 });
-
-
 
 export {
     getAllConversations,
