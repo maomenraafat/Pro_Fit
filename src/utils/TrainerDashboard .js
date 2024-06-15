@@ -62,55 +62,105 @@ class Dashboard {
 
   async getPackagesWithSubscriptions() {
     const packages = await PackageModel.find({ trainerId: this.trainerId });
-    let allSubscriptions = 0;
+    let total = 0;
     const packagesWithDetails = await Promise.all(
       packages.map(async (pkg) => {
         const subscriptionCounts = await SubscriptionModel.aggregate([
           {
             $match: {
-              package: pkg._id /* traineeSubscriptionStatus: "Current"*/,
+              package: pkg._id,
             },
           },
           { $group: { _id: "$status", count: { $sum: 1 } } },
         ]);
 
         const defaultCounts = {
-          activeSubscriptions: 0,
-          expiredSubscriptions: 0,
-          cancelledSubscriptions: 0,
+          active: 0,
+          expired: 0,
+          cancelled: 0,
         };
 
         const subscriptionDetails = subscriptionCounts.reduce(
           (acc, { _id, count }) => {
-            acc[`${_id.toLowerCase()}Subscriptions`] = count;
+            acc[_id.toLowerCase()] = count;
             return acc;
           },
           defaultCounts
         );
-        const totalSubscriptions =
-          subscriptionDetails.activeSubscriptions +
-          subscriptionDetails.expiredSubscriptions +
-          subscriptionDetails.cancelledSubscriptions;
+        const value =
+          subscriptionDetails.active +
+          subscriptionDetails.expired +
+          subscriptionDetails.cancelled;
 
-        allSubscriptions += totalSubscriptions;
+        total += value;
 
         return {
-          packageName: pkg.packageName,
-          packageId: pkg._id,
-          packageType: pkg.packageType,
-          active: pkg.active,
-          totalSubscriptions,
-          ...subscriptionDetails,
+          label: pkg.packageName,
+          value,
+          active: subscriptionDetails.active,
+          expired: subscriptionDetails.expired,
+          cancelled: subscriptionDetails.cancelled,
         };
       })
     );
 
     return {
-      packagesCount: packages.length,
-      allSubscriptions,
-      packages: packagesWithDetails,
+      total,
+      details: packagesWithDetails,
     };
   }
+
+  // async getPackagesWithSubscriptions() {
+  //   const packages = await PackageModel.find({ trainerId: this.trainerId });
+  //   let allSubscriptions = 0;
+  //   const packagesWithDetails = await Promise.all(
+  //     packages.map(async (pkg) => {
+  //       const subscriptionCounts = await SubscriptionModel.aggregate([
+  //         {
+  //           $match: {
+  //             package: pkg._id /* traineeSubscriptionStatus: "Current"*/,
+  //           },
+  //         },
+  //         { $group: { _id: "$status", count: { $sum: 1 } } },
+  //       ]);
+
+  //       const defaultCounts = {
+  //         activeSubscriptions: 0,
+  //         expiredSubscriptions: 0,
+  //         cancelledSubscriptions: 0,
+  //       };
+
+  //       const subscriptionDetails = subscriptionCounts.reduce(
+  //         (acc, { _id, count }) => {
+  //           acc[`${_id.toLowerCase()}Subscriptions`] = count;
+  //           return acc;
+  //         },
+  //         defaultCounts
+  //       );
+  //       const totalSubscriptions =
+  //         subscriptionDetails.activeSubscriptions +
+  //         subscriptionDetails.expiredSubscriptions +
+  //         subscriptionDetails.cancelledSubscriptions;
+
+  //       allSubscriptions += totalSubscriptions;
+
+  //       return {
+  //         packageName: pkg.packageName,
+  //         packageId: pkg._id,
+  //         packageType: pkg.packageType,
+  //         active: pkg.active,
+  //         totalSubscriptions,
+  //         ...subscriptionDetails,
+  //       };
+  //     })
+  //   );
+
+  //   return {
+  //     packagesCount: packages.length,
+  //     allSubscriptions,
+  //     packages: packagesWithDetails,
+  //   };
+  // }
 
   async getAllSubscriptionsDate() {
     const subscriptions = await SubscriptionModel.find({
@@ -129,7 +179,7 @@ class Dashboard {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$startDate" },
+            $dateToString: { /*format: "%Y-%m-%d",*/ date: "$startDate" },
           },
           totalPaidAmount: { $sum: "$paidAmount" },
         },

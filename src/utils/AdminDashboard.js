@@ -61,8 +61,8 @@ class AdminDashboard {
     const { totalTrainers, totalTrainees } = totalCounts;
 
     const ChartData = {
-      totalUsers: totalTrainers + totalTrainees,
-      data: [
+      total: totalTrainers + totalTrainees,
+      details: [
         {
           users: "trainers",
           value: totalTrainers,
@@ -101,8 +101,8 @@ class AdminDashboard {
     const totalTrainers = await trainerModel.countDocuments({});
 
     return {
-      totalTrainers,
-      statuses: statuses.map((status) => ({
+      total: totalTrainers,
+      details: statuses.map((status) => ({
         status,
         value: counts[status] || 0,
       })),
@@ -127,8 +127,8 @@ class AdminDashboard {
     const totalTrainees = await traineeModel.countDocuments({});
 
     return {
-      totalTrainees,
-      statuses: statuses.map((status) => ({
+      total: totalTrainees,
+      details: statuses.map((status) => ({
         status,
         value: counts[status] || 0,
       })),
@@ -140,7 +140,7 @@ class AdminDashboard {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$startDate" },
+            $dateToString: { /* format: "%Y-%m-%d", */ date: "$startDate" },
           },
           totalPaidAmount: { $sum: "$paidAmount" },
         },
