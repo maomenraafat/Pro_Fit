@@ -92,6 +92,39 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('fetchMessages', async (data) => {
+    try {
+      const { conversationId } = data;
+      const userId = socket.user.id;
+
+      const messages = await messageModel
+        .find({ conversationId })
+        .populate("sender", "firstName lastName email profilePhoto");
+
+      const formattedMessages = messages.map(message => ({
+        _id: message._id,
+        content: message.content,
+        images: message.images,
+        sender: {
+          _id: message.sender._id,
+          firstName: message.sender.firstName,
+          lastName: message.sender.lastName,
+          email: message.sender.email,
+          profilePhoto: message.sender.profilePhoto || "defaultProfilePhotoUrl",
+        },
+        userId: userId,
+        createdAt: message.createdAt.toISOString(),
+        updatedAt: message.updatedAt.toISOString(),
+      }));
+
+      socket.emit('previousMessages', formattedMessages);
+
+      console.log(`Messages fetched for conversation ${conversationId}`);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.user.id);
   });
