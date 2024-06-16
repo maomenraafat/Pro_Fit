@@ -77,7 +77,7 @@ io.on('connection', (socket) => {
 
       // Emit the message to the receiver's room
       io.to(receiverId.toString()).emit('newMessage', {
-        id: savedMessage._id,
+        _id: savedMessage._id,
         conversationId,
         senderId,
         content,
