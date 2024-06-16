@@ -79,7 +79,9 @@ io.on('connection', (socket) => {
       io.to(receiverId.toString()).emit('newMessage', {
         _id: savedMessage._id,
         conversationId,
-        senderId,
+        sender: {
+            _id: senderId
+          },
         content,
         images: imageUrls,
         createdAt: savedMessage.createdAt,
