@@ -9,6 +9,12 @@ DietRouter.get(
   allowedTo("trainee"),
   Diet.getDietPlan
 );
+DietRouter.patch(
+  "/setStartDateForCustomizedPlan/:id",
+  verifyToken,
+  allowedTo("trainee"),
+  Diet.setStartDateForCustomizedPlan
+);
 
 // DietRouter.get(
 //   "/getCustomizeDietPlan",

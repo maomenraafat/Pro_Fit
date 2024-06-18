@@ -5,6 +5,7 @@ import { AppError } from "../../../utils/AppError.js";
 import { catchAsyncError } from "../../../utils/catchAsyncError.js";
 //import { toCairoTimeString, toCairoDate } from "../../../utils/dateUtils.js";
 import { freeDietPlanSubscription } from "../../../../Database/models/freeDietPlanSubscription.model.js";
+import { traineeModel } from "../../../../Database/models/Trainee.model.js";
 
 function calculateConsumedMacros(plan) {
   let totalMacros = { calories: 0, proteins: 0, fats: 0, carbs: 0 };
@@ -101,100 +102,185 @@ const dietPlanOverview = catchAsyncError(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    data: firstDay,
+    data: subscribedPlan,
   });
 });
 
 const subscribeToFreeDietPlan = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
   const planId = req.params.id;
+  const { startDate } = req.body;
+
   const dietPlan = await nutritionModel.findById(planId).populate("days");
-  // console.log(dietPlan);
   if (!dietPlan) {
     return next(new AppError("Diet plan not found", 404));
   }
 
   const trainerId = dietPlan.trainer;
   const plandays = dietPlan.days;
+  const daysCount = dietPlan.daysCount;
+  const planmacros = dietPlan.planmacros;
 
-  let existingSubscription = await freeDietPlanSubscription.findOne({
-    trainee: traineeId,
-  });
-
-  if (existingSubscription) {
-    existingSubscription.dietPlan = planId;
-    existingSubscription.trainer = trainerId;
-    existingSubscription.days = plandays;
-    await existingSubscription.save();
-  } else {
-    existingSubscription = new freeDietPlanSubscription({
+  await nutritionModel.updateMany(
+    {
       trainee: traineeId,
-      trainer: trainerId,
-      dietPlan: planId,
-      days: plandays,
-    });
-    await existingSubscription.save();
+      plantype: "Free plan",
+      status: "Current",
+    },
+    {
+      status: "Archived",
+    }
+  );
+
+  const lastPlan = await nutritionModel
+    .findOne({
+      trainee: traineeId,
+      status: "Current",
+    })
+    .sort({ startDate: -1 })
+    .populate("days");
+
+  let startDateObj = new Date(startDate);
+  if (lastPlan && lastPlan.days.length > 0) {
+    const lastDay = new Date(lastPlan.days[lastPlan.days.length - 1].startDate);
+
+    if (startDateObj <= lastDay) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Start date must be after the last day of the current nutrition plan",
+      });
+    }
   }
 
-  res.status(200).json({ success: true, data: existingSubscription });
+  const updatedDays = plandays.map((day, index) => {
+    return {
+      ...day._doc,
+      startDate: new Date(
+        startDateObj.getTime() +
+          index * 24 * 60 * 60 * 1000 +
+          3 * 60 * 60 * 1000
+      ),
+    };
+  });
+
+  const newNutritionPlan = new nutritionModel({
+    trainer: trainerId,
+    daysCount: daysCount,
+    days: updatedDays,
+    planmacros: planmacros,
+    trainee: traineeId,
+    originalPlan: planId,
+    plantype: "Free plan",
+    startDate: startDateObj,
+    status: "Current",
+  });
+
+  await newNutritionPlan.save();
+
+  // Optionally update the trainee's current nutrition plan
+  // await traineeModel.findByIdAndUpdate(traineeId, {
+  //   nutritionPlan: newNutritionPlan._id,
+  // });
+
+  res.status(200).json({ success: true, data: newNutritionPlan });
 });
-
-// const getSubscribedFreeDietPlan = catchAsyncError(async (req, res, next) => {
-//   const traineeId = req.user.payload.id;
-//   const subscribedPlans = await freeDietPlanSubscription.find({
-//     trainee: traineeId,
-//   });
-//   //.populate("dietPlan");
-
-//   res.status(200).json({ success: true, data: subscribedPlans });
-// });
-
-// const getCustomizeDietPlan = catchAsyncError(async (req, res, next) => {
-//   const traineeId = req.user.payload.id;
-//   // const id = req.params.id;
-//   const data = await nutritionModel.findOne({
-//     trainee: traineeId,
-//     //trainer: id,
-//     status: "Current",
-//     plantype: "Customized plan",
-//   });
-//   if (!data) {
-//     // return next(new AppError("data not found", 404));
-//     res
-//       .status(200)
-//       .json({ success: true, message: "You Did not Have Customized plan" });
-//   }
-//   const macros = calculateConsumedMacros(data);
-//   res.status(200).json({ success: true, data /*macros*/ });
-// });
 
 const getDietPlan = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
 
-  const customizedPlan = await nutritionModel.findOne({
-    trainee: traineeId,
-    status: "Current",
-    plantype: "Customized plan",
-  });
+  const DietPlan = await nutritionModel
+    .find({
+      trainee: traineeId,
+      status: { $ne: "First" },
+      //status: "Current",
+      //plantype: "Customized plan",
+    })
+    .select(
+      "_id planName trainer trainee daysCount numberofmeals startDate days planmacros plantype published status originalPlan timestamps"
+    );
 
-  if (customizedPlan) {
-    return res
-      .status(200)
-      .json({ success: true, data: customizedPlan /*macros*/ });
+  if (DietPlan.length > 0) {
+    return res.status(200).json({ success: true, data: DietPlan });
   }
-
-  const subscribedPlans = await freeDietPlanSubscription.find({
-    trainee: traineeId,
+  return res.status(200).json({
+    success: true,
+    message: "No diet plans found for this trainee",
+    data: DietPlan,
   });
-
-  if (subscribedPlans.length > 0) {
-    return res.status(200).json({ success: true, data: subscribedPlans });
-  }
-
-  return res
-    .status(200)
-    .json({ success: true, message: "No diet plans found for this trainee" });
 });
+
+const setStartDateForCustomizedPlan = catchAsyncError(
+  async (req, res, next) => {
+    const planId = req.params.id;
+    const { startDate } = req.body;
+
+    if (!startDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Start date is required",
+      });
+    }
+
+    const startDateObj = new Date(startDate);
+
+    if (isNaN(startDateObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid start date provided",
+      });
+    }
+
+    const currentNutritionPlan = await nutritionModel
+      .findOne({
+        trainee: req.user.payload.id,
+        status: "Archived",
+      })
+      .sort({ createdAt: -1 });
+
+    if (currentNutritionPlan) {
+      const lastDay =
+        currentNutritionPlan.days[currentNutritionPlan.days.length - 1]
+          .startDate;
+      if (startDateObj <= new Date(lastDay)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Start date must be after the last day of the current nutrition plan",
+        });
+      }
+    }
+
+    const nutritionPlan = await nutritionModel.findById(planId);
+    if (!nutritionPlan) {
+      return res.status(404).json({
+        success: false,
+        message: "Nutrition plan not found",
+      });
+    }
+
+    nutritionPlan.startDate = startDateObj;
+
+    if (nutritionPlan.days && nutritionPlan.days.length > 0) {
+      nutritionPlan.days.forEach((day, index) => {
+        day.startDate = new Date(
+          startDateObj.getTime() +
+            index * 24 * 60 * 60 * 1000 +
+            3 * 60 * 60 * 1000
+        );
+      });
+    }
+
+    await nutritionPlan.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Start date set successfully for the plan and all days",
+      data: nutritionPlan,
+    });
+  }
+);
+
 /*updateFoodConsumedStatus*/
 const updateFoodConsumedStatus = catchAsyncError(async (req, res, next) => {
   const planId = req.params.id;
@@ -323,6 +409,7 @@ export {
   dietPlanOverview,
   subscribeToFreeDietPlan,
   getDietPlan,
+  setStartDateForCustomizedPlan,
   //getSubscribedFreeDietPlan,
   // getCustomizeDietPlan,
   updateFoodConsumedStatus,
