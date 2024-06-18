@@ -223,7 +223,7 @@ const getFoodsForSpecificplan = catchAsyncError(async (req, res, next) => {
   }
 
   let apiFeatures = new ApiFeatures(foodModel.find(query), req.query)
-    .search()
+    .search(["foodname", "category"])
     .filter()
     .sort()
     .paginate()

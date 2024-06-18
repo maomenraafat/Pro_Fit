@@ -352,6 +352,7 @@ const getProfitMeals = catchAsyncError(async (req, res, next) => {
 //     data,
 //   });
 // });
+
 const getAllMeals = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
   //let query = { $or: [{ Trainer: id }, { Trainer: null }] };
@@ -363,8 +364,19 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
   } else if ("profitMeals" in req.query) {
     query.Trainer = null;
   }
+
+  if (req.query.keywords) {
+    const keywords = req.query.keywords;
+    query.$or = [
+      { mealname: { $regex: keywords, $options: "i" } },
+      { mealnote: { $regex: keywords, $options: "i" } },
+      { "ingredients.foodname": { $regex: keywords, $options: "i" } },
+      { "ingredients.food.category": { $regex: keywords, $options: "i" } },
+      { planName: { $regex: keywords, $options: "i" } },
+    ];
+  }
   let apiFeatures = new ApiFeatures(mealModel.find(query), req.query)
-    .search()
+    //.search(["mealname", "mealnote"])
     .filter()
     .sort()
     .paginate()
@@ -374,7 +386,7 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
   //   path: "ingredients.food",
   //   select: "",
   // });
-
+  console.log("Query:", apiFeatures.mongooseQuery.getQuery());
   let data = await apiFeatures.mongooseQuery.populate("ingredients.food");
 
   let totalCount = await mealModel
@@ -383,9 +395,9 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
 
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
-  if (data.length === 0) {
-    return next(new AppError("No data found", 404));
-  }
+  // if (data.length === 0) {
+  //   return next(new AppError("No data found", 404));
+  // }
 
   res.status(200).json({
     success: true,
@@ -394,7 +406,7 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
     totalPages: totalPages,
     Page: apiFeatures.page,
     limit: apiFeatures.limit,
-    data,
+    data: data.length > 0 ? data : [],
   });
 });
 const getSpecificMeal = catchAsyncError(async (req, res, next) => {

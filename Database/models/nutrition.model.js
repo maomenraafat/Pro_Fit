@@ -143,12 +143,16 @@ const nutritionSchema = new Schema(
       type: Number,
       required: false,
     },
+    startDate: {
+      type: Date,
+      required: false,
+    },
     days: [
       {
-        // startDate: {
-        //   type: Date,
-        //   required: false,
-        // },
+        startDate: {
+          type: Date,
+          required: false,
+        },
         day: {
           type: String,
           required: false,
@@ -244,8 +248,13 @@ const nutritionSchema = new Schema(
     published: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: ["Current", "Last", "Archived"],
+      enum: ["Current", "First", "Archived"],
       default: "Current",
+    },
+    originalPlan: {
+      type: Schema.Types.ObjectId,
+      ref: "nutrition",
+      required: false,
     },
   },
   {
