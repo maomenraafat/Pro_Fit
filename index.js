@@ -37,7 +37,7 @@ import traineeProgressRouter from "./src/modules/Trainee/Progress/progress.route
 import conversationRouter from "./src/modules/Conversation/conversation.routes.js";
 import messageRouter from "./src/modules/Message/message.routes.js";
 import adminDashboardRoutes from "./src/modules/Admin/Dashboard/Dashboard.routes.js";
-const app = express();
+import { app, server } from "./Socket/socket.js";
 const port = 4000;
 app.use(cors());
 app.use(express.json());
@@ -90,5 +90,5 @@ app.use(globalErrorHandling);
 //console.log(`Memory Usage: ${process.memoryUsage().heapUsed / 1024 / 1024} MB`);
 
 dbConnection();
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+server.listen(port, () => console.log(`Example app listening on port ${port}!`));
 //node --max-old-space-size=4096 index.js  # Increase to 4 GB, adjust as necessary
