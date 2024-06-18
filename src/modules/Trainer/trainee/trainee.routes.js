@@ -44,6 +44,12 @@ trainerTraineesRouter.get(
   allowedTo("trainer"),
   trainee.getTraineeCustomizePlan
 );
+trainerTraineesRouter.get(
+  "/getTraineeDietAssessment/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeDietAssessment
+);
 trainerTraineesRouter.patch(
   "/createTraineeCustomizePlan/:id",
   verifyToken,

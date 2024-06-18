@@ -301,6 +301,7 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+
 const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
@@ -314,12 +315,14 @@ const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
     message: "Request sent successfully",
   });
 });
+
 const getAllCustomizePlans = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
   let baseQuery = nutritionModel.find({
     trainer: trainerId,
     trainee: id,
+    published: false,
   });
 
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
@@ -357,6 +360,7 @@ const getAllCustomizePlans = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+
 const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
@@ -365,6 +369,7 @@ const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
       trainer: trainerId,
       trainee: id,
       status: "Current",
+      published: false,
     })
     .populate({
       path: "trainee",
@@ -373,6 +378,26 @@ const getTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
     });
   if (!data) {
     return next(new AppError("No nutrition plans found", 404));
+  }
+  res.status(200).json({ success: true, data });
+});
+const getTraineeDietAssessment = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
+  const id = req.params.id;
+  const data = await traineeDietAssessmentModel.findOne({
+    trainer: trainerId,
+    trainee: id,
+    status: "Current",
+  });
+  // .populate({
+  //   path: "trainee",
+  //   select:
+  //     " firstName  lastName email profilePhoto phoneNumber  dietAssessmentStatus",
+  // });
+  if (!data) {
+    res
+      .status(200)
+      .json({ success: true, message: "No nutrition plans found", data });
   }
   res.status(200).json({ success: true, data });
 });
@@ -477,23 +502,87 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
 });
 
 const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
   const traineeId = req.params.id;
+  const period = req.params.period || 999999999;
 
   if (!traineeId) {
     return res.status(400).json({ message: "Trainee ID is required" });
   }
-  const nutritionData = await getNutritionPlanData(traineeId);
+
+  const dietPlans = await nutritionModel
+    .find({
+      trainer: trainerId,
+      trainee: traineeId,
+      plantype: "Customized plan",
+      status: { $ne: "First" },
+    })
+    .select(
+      "planName trainer trainee daysCount numberofmeals startDate days planmacros plantype published status originalPlan timestamps"
+    );
+
+  if (dietPlans.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: "No diet plans found for this trainee",
+      data: [],
+    });
+  }
+
+  let allDays = [];
+  const currentDate = new Date();
+
+  dietPlans.forEach((plan) => {
+    const filteredDays = plan.days.filter((day) => {
+      const dayDate = new Date(day.startDate);
+      const timeDifference = currentDate - dayDate;
+      const dayDifference = timeDifference / (1000 * 3600 * 24);
+      return dayDifference <= period;
+    });
+
+    allDays = allDays.concat(filteredDays);
+  });
+
+  allDays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+  let previousDate = null;
+  const resultDays = [];
+
+  allDays.forEach((day, index) => {
+    const dayDate = new Date(day.startDate);
+
+    if (previousDate) {
+      let nextExpectedDate = new Date(
+        previousDate.getTime() + 24 * 60 * 60 * 1000
+      );
+
+      while (nextExpectedDate < dayDate) {
+        resultDays.push({
+          day: `Missing Day`,
+          startDate: nextExpectedDate.toISOString(),
+          totalDayMacros: 0,
+          totalEatenDayMacros: 0,
+        });
+        nextExpectedDate = new Date(
+          nextExpectedDate.getTime() + 24 * 60 * 60 * 1000
+        );
+      }
+    }
+
+    resultDays.push({
+      day: day.day,
+      startDate: day.startDate,
+      totalDayMacros: day.daymacros?.calories || 0,
+      totalEatenDayMacros: day.eatenDaysMacros?.calories || 0,
+    });
+
+    previousDate = dayDate;
+  });
+
   res.status(200).json({
     success: true,
     message: "Successfully retrieved nutrition tracking data",
-    data: {
-      Diet: nutritionData,
-      Workout: {
-        totalExercises: 0,
-        totalExercisesDone: 0,
-        percentage: 0,
-      },
-    },
+    data: resultDays,
   });
 });
 
@@ -933,6 +1022,7 @@ export {
   getSpecificTrainee,
   getAllCustomizePlans,
   getTraineeCustomizePlan,
+  getTraineeDietAssessment,
   createTraineeCustomizePlan,
   makeRequestAssessment,
   getTraineesSubscription,
