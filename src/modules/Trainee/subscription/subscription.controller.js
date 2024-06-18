@@ -21,12 +21,14 @@ async function createPackageModel(
   id,
   traineeId,
   packageduration,
-  planName = ""
+  planName = "",
+  status = "First"
 ) {
   const modelData = {
     trainer: id,
     trainee: traineeId,
     duration: packageduration,
+    status: status,
   };
 
   if (Model === nutritionModel && planName) {
@@ -43,7 +45,8 @@ const handlePackageType = async (
   trainerId,
   traineeId,
   traineeFullName,
-  trainee
+  trainee,
+  status
 ) => {
   switch (packageType) {
     case PACKAGE_TYPES.NUTRITION_WORKOUT:
@@ -52,14 +55,16 @@ const handlePackageType = async (
         trainerId,
         traineeId,
         duration,
-        traineeFullName
+        traineeFullName,
+        status
       );
       await createPackageModel(
         WorkoutModel,
         trainerId,
         traineeId,
         duration,
-        traineeFullName
+        traineeFullName,
+        status
       );
       //await createDietAssessment(trainerId, traineeId);
       //await createWorkoutAssessment(trainerId, traineeId);
@@ -70,7 +75,8 @@ const handlePackageType = async (
         trainerId,
         traineeId,
         duration,
-        traineeFullName
+        traineeFullName,
+        status
       );
       trainee.dietAssessmentStatus = "Pending";
       await trainee.save();
@@ -92,7 +98,8 @@ const handlePackageType = async (
         trainerId,
         traineeId,
         duration,
-        traineeFullName
+        traineeFullName,
+        status
       );
       //await createWorkoutAssessment(trainerId, traineeId);
       break;
@@ -249,6 +256,7 @@ const handlePackageType = async (
 /////////////////////////
 
 const getTrainerpackages = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
   const id = req.params.id;
   const data = await PackageModel.find({
     trainerId: id,
@@ -257,10 +265,16 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
   if (!data) {
     return next(new AppError("data not found", 404));
   }
+  const traineeStatus = await traineeModel
+    .find({
+      _id: traineeId,
+    })
+    .select("status");
   res.status(201).json({
     success: true,
     // message: " success",
     data: data,
+    traineeStatus,
   });
 });
 
@@ -396,9 +410,9 @@ const subscribeWithTrainer = catchAsyncError(async (req, res, next) => {
   // Create a new conversation
   const conversation = new conversationModel({
     participants: [
-      { participantId: traineeId, participantModel: 'Trainee' },
-      { participantId: id, participantModel: 'Trainer' }
-    ]
+      { participantId: traineeId, participantModel: "Trainee" },
+      { participantId: id, participantModel: "Trainer" },
+    ],
   });
 
   await conversation.save();

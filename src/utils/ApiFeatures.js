@@ -129,9 +129,9 @@ export class ApiFeatures {
         $or: [
           { foodname: { $regex: this.queryString.keywords, $options: "i" } },
           { category: { $regex: this.queryString.keywords, $options: "i" } },
-          { mealname: { $regex: this.queryString.keywords, $options: "i" } },
-          { mealnote: { $regex: this.queryString.keywords, $options: "i" } },
-          { planName: { $regex: this.queryString.keywords, $options: "i" } },
+          // { mealname: { $regex: this.queryString.keywords, $options: "i" } },
+          // { mealnote: { $regex: this.queryString.keywords, $options: "i" } },
+          // { planName: { $regex: this.queryString.keywords, $options: "i" } },
         ],
       });
     }
