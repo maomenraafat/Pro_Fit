@@ -185,6 +185,17 @@ const getSpecificDietAssessment = catchAsyncError(async (req, res, next) => {
   // }
   res.status(200).json({ success: true, data });
 });
+
+const getDietAssessmentStatus = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
+  const data = await traineeModel
+    .find({ _id: traineeId })
+    .select("dietAssessmentStatus");
+  // if (!data) {
+  //   return next(new AppError("data not found", 404));
+  // }
+  res.status(200).json({ success: true, data });
+});
 const getDietAssessments = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
   const data = await traineeDietAssessmentModel.find({ trainee: traineeId });
@@ -289,6 +300,7 @@ const FillDietAssessment = catchAsyncError(async (req, res, next) => {
     religionrestriction,
     dietType,
     numberofmeals,
+    startDate: null,
   });
   await newNutritionPlan.save();
   await traineeModel.findByIdAndUpdate(
@@ -307,6 +319,7 @@ const FillDietAssessment = catchAsyncError(async (req, res, next) => {
 export {
   getDietAssessments,
   FillDietAssessment,
+  getDietAssessmentStatus,
   getDietAssessmentsData,
   getDietAssessmentsList,
   getSpecificDietAssessment,

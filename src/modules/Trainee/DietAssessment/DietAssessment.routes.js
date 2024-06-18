@@ -13,6 +13,12 @@ DietAssessmentRouter.get(
   allowedTo("trainee"),
   DietAssessment.getDietAssessments
 );
+DietAssessmentRouter.get(
+  "/DietAssessmentStatus",
+  verifyToken,
+  allowedTo("trainee"),
+  DietAssessment.getDietAssessmentStatus
+);
 
 DietAssessmentRouter.get(
   "/DietAssessmentsList",
