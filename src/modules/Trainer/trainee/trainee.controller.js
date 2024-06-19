@@ -765,6 +765,64 @@ const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
   });
 });
 
+//Y-axis should be 40,60,80,100,120,140,160,180,200,220
+const getLastFiveHeartRateRecords = catchAsyncError(async (req, res) => {
+  const trainerId = req.user.payload.id;
+  const { id } = req.params;
+
+  const trainee = await traineeModel.findById(id);
+
+  if (!trainee) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee not found.",
+    });
+  }
+
+  if (
+    !trainee.assignedTrainer ||
+    trainee.assignedTrainer.toString() !== trainerId
+  ) {
+    return res.status(403).json({
+      success: false,
+      message:
+        "You are not authorized to view this trainee's heart rate records.",
+    });
+  }
+
+  // Get the last five heart rate records for the trainee
+  let lastFiveHeartRateRecords = await HeartRate.find({ trainee: id })
+    .sort({ _id: -1 })
+    .limit(5);
+
+  const recordsCount = lastFiveHeartRateRecords.length;
+
+  if (recordsCount < 5) {
+    const currentDate = new Date();
+    for (let i = 0; i < 5 - recordsCount; i++) {
+      lastFiveHeartRateRecords.push({
+        createdAt: currentDate,
+        bpm: 0,
+      });
+    }
+  }
+
+  // Ensure only bpm and createdAt fields are included
+  lastFiveHeartRateRecords = lastFiveHeartRateRecords.map(record => ({
+    bpm: record.bpm,
+    createdAt: record.createdAt
+  }));
+
+  // Sort the records again by date in ascending order
+  lastFiveHeartRateRecords = lastFiveHeartRateRecords.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  res.status(200).json({
+    success: true,
+    message: "Last five heart rate records retrieved successfully.",
+    data: lastFiveHeartRateRecords,
+  });
+});
+
 const updateTraineeStepGoalForTrainer = catchAsyncError(async (req, res) => {
   const { id } = req.params;
   const trainerId = req.user.payload.id;
@@ -1064,4 +1122,5 @@ export {
   getTraineeLatestSleepData,
   getTraineeProgressForTrainer,
   getDietAssessmentMeasurementsForTrainer,
+  getLastFiveHeartRateRecords
 };

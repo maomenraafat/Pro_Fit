@@ -93,6 +93,13 @@ trainerTraineesRouter.get(
   trainee.getTraineeLatestHeartRateRecord
 );
 
+trainerTraineesRouter.get(
+  "/heart-rating/last-five/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getLastFiveHeartRateRecords
+);
+
 // GET endpoint for trainer to view a trainee's steps of today
 trainerTraineesRouter.get(
   "/steps/:id",
