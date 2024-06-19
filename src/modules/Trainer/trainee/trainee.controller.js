@@ -50,20 +50,21 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
 
   let baseQuery = SubscriptionModel.find({
     trainerId: trainerId,
-    //status: "Active",
     traineeSubscriptionStatus: "Current",
     ...(traineeIds.length > 0 && { traineeId: { $in: traineeIds } }),
   })
     .populate({
       path: "traineeId",
       select:
-        "firstName lastName email profilePhoto dietAssessmentStatus  startDate endDate",
+        "firstName lastName email profilePhoto dietAssessmentStatus startDate endDate",
       match: { _id: { $ne: null } },
     })
     .populate({
       path: "package",
       select: "packageName packageType",
     });
+
+  let clonedQuery = baseQuery.clone();
 
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
     .sort()
@@ -75,6 +76,9 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
   subscriptions = subscriptions.filter(
     (subscription) => subscription.traineeId !== null
   );
+
+  const allSubscriptions = await clonedQuery.exec();
+
   if (!subscriptions || subscriptions.length === 0) {
     return res.status(200).json({
       success: true,
@@ -84,8 +88,20 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
       limit: apiFeatures.limit,
       message: "No trainees found",
       data: [],
+      allData: allSubscriptions,
     });
   }
+
+  allSubscriptions.forEach((subscription) => {
+    if (
+      subscription.status === "Cancelled" ||
+      subscription.status === "Expired"
+    ) {
+      if (subscription.traineeId) {
+        subscription.traineeId._doc.dietAssessmentStatus = "Not Allowed";
+      }
+    }
+  });
   subscriptions.forEach((subscription) => {
     if (
       subscription.status === "Cancelled" ||
@@ -127,6 +143,7 @@ const getActiveTrainees = catchAsyncError(async (req, res, next) => {
     limit: apiFeatures.limit,
     message: "Trainees retrieved successfully",
     data: subscriptions,
+    allData: allSubscriptions,
   });
 });
 
@@ -137,7 +154,7 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     return res.status(400).json({ message: "Trainer ID is required" });
   }
 
-  let baseQuery = SubscriptionModel.aggregate([
+  const basePipeline = [
     {
       $match: {
         trainerId: objectIdTrainerId,
@@ -206,11 +223,15 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     },
     { $unwind: "$packageDetails" },
     { $sort: { "traineeDetails.currentAssessment.createdAt": -1 } },
-  ]);
+  ];
+
+  let baseQuery = SubscriptionModel.aggregate(basePipeline);
+  let allQuery = SubscriptionModel.aggregate(basePipeline);
 
   let apiFeatures = new ApiFeatures(baseQuery, req.query).paginate();
 
   let subscriptions = await apiFeatures.mongooseQuery;
+  let allSubscriptions = await allQuery.exec();
 
   if (!subscriptions || subscriptions.length === 0) {
     return res.status(200).json({
@@ -221,10 +242,11 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
       limit: apiFeatures.limit,
       message: "No trainees found",
       data: [],
+      allData: allSubscriptions,
     });
   }
 
-  const responseSubscriptions = subscriptions.map((sub) => ({
+  const mapSubscription = (sub) => ({
     _id: sub._id,
     trainerId: sub.trainerId,
     traineeId: {
@@ -241,10 +263,6 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
       _id: sub.packageDetails._id,
       packageName: sub.packageDetails.packageName,
       packageType: sub.packageDetails.packageType,
-      // description: sub.packageDetails.description,
-      // price: sub.packageDetails.price,
-      // duration: sub.packageDetails.duration,
-      // subscribersLimit: sub.packageDetails.subscribersLimit,
     },
     paidAmount: sub.paidAmount,
     status: sub.status,
@@ -254,7 +272,10 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     subscriptionType: sub.subscriptionType,
     traineeSubscriptionStatus: sub.traineeSubscriptionStatus,
     __v: sub.__v,
-  }));
+  });
+
+  const responseSubscriptions = subscriptions.map(mapSubscription);
+  const allResponseSubscriptions = allSubscriptions.map(mapSubscription);
 
   res.status(200).json({
     success: true,
@@ -264,6 +285,7 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
     limit: apiFeatures.limit,
     message: "Trainees retrieved successfully",
     data: responseSubscriptions,
+    allData: allResponseSubscriptions,
   });
 });
 
@@ -456,6 +478,7 @@ const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
 const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
+
   let baseQuery = SubscriptionModel.find({
     trainerId,
     traineeId: id,
@@ -463,8 +486,11 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
     .select("subscriptionType duration paidAmount startDate endDate status")
     .populate({
       path: "package",
-      select: "packageName ",
+      select: "packageName",
     });
+
+  let countQuery = baseQuery.clone();
+
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
     .sort()
     .search()
@@ -472,7 +498,11 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
     .paginate()
     .fields();
 
-  let subscriptions = await apiFeatures.mongooseQuery;
+  let subscriptions = await apiFeatures.mongooseQuery.exec();
+
+  let totalCount = await countQuery.countDocuments();
+  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
   if (!subscriptions || subscriptions.length === 0) {
     return res.status(200).json({
       success: true,
@@ -480,15 +510,13 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
       totalPages: 0,
       page: apiFeatures.page,
       limit: apiFeatures.limit,
-      message: "No  Subscription found",
+      message: "No Subscription found",
       data: [],
     });
   }
 
-  let totalCount = await SubscriptionModel.countDocuments(
-    apiFeatures.mongooseQuery.getQuery()
-  );
-  const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+  const allSubscriptionsQuery = baseQuery.clone();
+  const allSubscriptions = await allSubscriptionsQuery.exec();
 
   res.status(200).json({
     success: true,
@@ -496,8 +524,9 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
     totalPages: totalPages,
     page: apiFeatures.page,
     limit: apiFeatures.limit,
-    message: " Subscription retrieved successfully",
+    message: "Subscription retrieved successfully",
     data: subscriptions,
+    allData: allSubscriptions,
   });
 });
 

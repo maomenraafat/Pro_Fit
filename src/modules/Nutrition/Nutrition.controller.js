@@ -108,7 +108,7 @@ const updateNutritionPlan = catchAsyncError(async (req, res, next) => {
 const getNutritionMyPlans = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   let Query = { trainer: trainerId, plantype: "My plan" };
-
+  const allData = await nutritionModel.find(Query);
   let apiFeatures = new ApiFeatures(nutritionModel.find(Query), req.query)
     .search()
     .sort()
@@ -124,9 +124,9 @@ const getNutritionMyPlans = catchAsyncError(async (req, res, next) => {
 
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
 
-  if (data.length === 0) {
-    return next(new AppError("No nutrition plans found", 404));
-  }
+  // if (data.length === 0) {
+  //   return next(new AppError("No nutrition plans found", 404));
+  // }
 
   res.status(200).json({
     status: "success",
@@ -134,7 +134,8 @@ const getNutritionMyPlans = catchAsyncError(async (req, res, next) => {
     totalPages: totalPages,
     page: apiFeatures.page,
     limit: apiFeatures.limit,
-    data,
+    data: data.length > 0 ? data : [],
+    allData,
   });
 });
 const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {

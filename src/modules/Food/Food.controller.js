@@ -171,7 +171,7 @@ const getProfitFoods = catchAsyncError(async (req, res, next) => {
 });
 const getAllFoods = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  //let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  let allquery = { $or: [{ Trainer: id }, { Trainer: null }] };
   let query = {};
   if ("allFoods" in req.query) {
     query.$or = [{ Trainer: id }, { Trainer: null }];
@@ -180,6 +180,7 @@ const getAllFoods = catchAsyncError(async (req, res, next) => {
   } else if ("profitFoods" in req.query) {
     query.Trainer = null;
   }
+  const allData = await foodModel.find(allquery);
   let apiFeatures = new ApiFeatures(foodModel.find(query), req.query)
     .search()
     .filter()
@@ -192,7 +193,16 @@ const getAllFoods = catchAsyncError(async (req, res, next) => {
     .countDocuments();
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
   if (data.length === 0) {
-    return next(new AppError("Data not found", 404));
+    res.status(201).json({
+      success: true,
+      message: "Success",
+      totalDocuments: totalCount,
+      totalPages: totalPages,
+      page: apiFeatures.page,
+      limit: apiFeatures.limit,
+      data: [],
+      allData,
+    });
   }
   res.status(200).json({
     success: true,
@@ -202,6 +212,7 @@ const getAllFoods = catchAsyncError(async (req, res, next) => {
     page: apiFeatures.page,
     limit: apiFeatures.limit,
     data,
+    allData,
   });
 });
 
@@ -223,7 +234,7 @@ const getFoodsForSpecificplan = catchAsyncError(async (req, res, next) => {
   }
 
   let apiFeatures = new ApiFeatures(foodModel.find(query), req.query)
-    .search(["foodname", "category"])
+    //.search(["foodname", "category"])
     .filter()
     .sort()
     .paginate()

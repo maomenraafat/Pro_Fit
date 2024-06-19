@@ -355,7 +355,7 @@ const getProfitMeals = catchAsyncError(async (req, res, next) => {
 
 const getAllMeals = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
-  //let query = { $or: [{ Trainer: id }, { Trainer: null }] };
+  let allquery = { $or: [{ Trainer: id }, { Trainer: null }] };
   let query = {};
   if ("allMeals" in req.query) {
     query.$or = [{ Trainer: id }, { Trainer: null }];
@@ -365,16 +365,17 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
     query.Trainer = null;
   }
 
-  if (req.query.keywords) {
-    const keywords = req.query.keywords;
-    query.$or = [
-      { mealname: { $regex: keywords, $options: "i" } },
-      { mealnote: { $regex: keywords, $options: "i" } },
-      { "ingredients.foodname": { $regex: keywords, $options: "i" } },
-      { "ingredients.food.category": { $regex: keywords, $options: "i" } },
-      { planName: { $regex: keywords, $options: "i" } },
-    ];
-  }
+  // if (req.query.keywords) {
+  //   const keywords = req.query.keywords;
+  //   query.$or = [
+  //     { mealname: { $regex: keywords, $options: "i" } },
+  //     { mealnote: { $regex: keywords, $options: "i" } },
+  //     { "ingredients.foodname": { $regex: keywords, $options: "i" } },
+  //     { "ingredients.food.category": { $regex: keywords, $options: "i" } },
+  //     { planName: { $regex: keywords, $options: "i" } },
+  //   ];
+  // }
+  const allData = await mealModel.find(allquery);
   let apiFeatures = new ApiFeatures(mealModel.find(query), req.query)
     //.search(["mealname", "mealnote"])
     .filter()
@@ -407,6 +408,7 @@ const getAllMeals = catchAsyncError(async (req, res, next) => {
     Page: apiFeatures.page,
     limit: apiFeatures.limit,
     data: data.length > 0 ? data : [],
+    allData,
   });
 });
 const getSpecificMeal = catchAsyncError(async (req, res, next) => {

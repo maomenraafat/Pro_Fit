@@ -308,7 +308,6 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     let query = {};
 
     if (nameParts.length > 1) {
-      // Assume the first part is the first name and the second part is the last name
       query = {
         $or: [
           {
@@ -322,7 +321,6 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
         ],
       };
     } else {
-      // Search either first name or last name if only one part is provided
       query = {
         $or: [
           { firstName: { $regex: req.query.keywords, $options: "i" } },
@@ -335,31 +333,51 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     traineeIds = trainees.map((trainee) => trainee._id);
   }
 
-  let baseQuery = SubscriptionModel.find({
+  const queryConditions = {
     trainerId: id,
-    ...(traineeIds.length > 0 && { traineeId: { $in: traineeIds } }), // Use trainee IDs from the search result
-  })
+    ...(traineeIds.length > 0 && { traineeId: { $in: traineeIds } }),
+  };
+
+  let baseQuery = SubscriptionModel.find(queryConditions)
     .select("startDate paidAmount status subscriptionType duration")
     .populate({
       path: "traineeId",
       select: "firstName lastName",
-      match: { _id: { $ne: null } }, // Ensures only populated if traineeId exists
+      match: { _id: { $ne: null } },
     })
     .populate({
       path: "package",
       select: "packageName -_id",
     });
 
-  let apiFeatures = new ApiFeatures(baseQuery, req.query)
+  const allSubscriptions = await baseQuery.exec();
+
+  const allData = allSubscriptions.map((subscription) => ({
+    id: subscription._id,
+    firstName: subscription.traineeId?.firstName || "No Name",
+    lastName: subscription.traineeId?.lastName || "No Name",
+    packageName: subscription.package?.packageName || "No Package",
+    status: subscription.status,
+    startDate: subscription.startDate,
+    duration: subscription.duration,
+    subscriptionType: subscription.subscriptionType,
+    Amount: subscription.paidAmount,
+  }));
+
+  let apiFeatures = new ApiFeatures(
+    SubscriptionModel.find(queryConditions),
+    req.query
+  )
     .filter()
     .sort()
     .paginate()
     .fields();
 
-  let subscriptions = await apiFeatures.mongooseQuery;
+  let subscriptions = await apiFeatures.mongooseQuery.exec();
   subscriptions = subscriptions.filter(
     (subscription) => subscription.traineeId !== null
   );
+
   if (!subscriptions || subscriptions.length === 0) {
     res.status(200).json({
       success: true,
@@ -375,14 +393,11 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
 
   const data = subscriptions.map((subscription) => ({
     id: subscription._id,
-    firstName: subscription.traineeId?.firstName || "No Name ",
-    lastName: subscription.traineeId?.lastName || "No Name ",
-    // fullName: `${subscription.traineeId.firstName} ${subscription.traineeId.lastName}`,
+    firstName: subscription.traineeId?.firstName || "No Name",
+    lastName: subscription.traineeId?.lastName || "No Name",
     packageName: subscription.package?.packageName || "No Package",
     status: subscription.status,
     startDate: subscription.startDate,
-    // ? subscription.startDate.toISOString().split("T")[0]
-    // : null,
     duration: subscription.duration,
     subscriptionType: subscription.subscriptionType,
     Amount: subscription.paidAmount,
@@ -401,6 +416,7 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     limit: apiFeatures.limit,
     message: "Subscriptions information retrieved successfully",
     data,
+    allData,
   });
 });
 

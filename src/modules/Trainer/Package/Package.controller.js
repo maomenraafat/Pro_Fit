@@ -98,6 +98,10 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
   let baseQuery = PackageModel.find({
     trainerId: id,
   });
+  const allData = await PackageModel.find({
+    trainerId: id,
+  });
+
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
     .search()
     .filter()
@@ -114,6 +118,7 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
       limit: apiFeatures.limit,
       message: "No data found",
       data: [],
+      allData,
     });
     return;
   }
@@ -130,6 +135,7 @@ const getTrainerpackages = catchAsyncError(async (req, res, next) => {
     limit: apiFeatures.limit,
     message: "Packages information retrieved successfully",
     data,
+    allData,
   });
 });
 

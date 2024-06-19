@@ -117,19 +117,11 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
       limit: apiFeatures.limit,
       message: "No data found",
       data: [],
+      allData: [],
     });
     return;
   }
 
-  // if (!isTrainee) {
-  //   await Promise.all(
-  //     users.map(async (user) => {
-  //       await user.updateSubscriptions();
-  //       user.paidAmount = await user.calculateTotalPaidAmount();
-  //       await user.save();
-  //     })
-  //   );
-  // }
   if (!isTrainee) {
     await Promise.all(
       users.map(async (user) => {
@@ -142,14 +134,19 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
   const data = users.map((user) => {
     const userObject = user.toObject({ virtuals: true });
     userObject.Registration_Date = userObject.createdAt;
-    // .toISOString()
-    // .split("T")[0];
     delete userObject.createdAt;
     if (!isTrainee) {
       delete userObject.updatedAt;
     }
     return userObject;
   });
+
+  const allUsers = await userModel
+    .find()
+    .select(
+      "firstName lastName email profilePhoto phoneNumber status createdAt"
+    );
+  const allData = allUsers.map((user) => user.toObject({ virtuals: true }));
 
   let totalCount = await userModel
     .find(apiFeatures.mongooseQuery.getQuery())
@@ -163,6 +160,7 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
     Page: apiFeatures.page,
     limit: apiFeatures.limit,
     data,
+    allData,
   });
 });
 
@@ -172,14 +170,13 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     traineeIds = [];
   if (req.query.keywords) {
     const nameParts = req.query.keywords.split(" ");
-    let regex = new RegExp(`^${req.query.keywords}$`, "i"); // Default regex if only one name is provided
+    let regex = new RegExp(`^${req.query.keywords}$`, "i");
 
     let searchQuery = {
       $or: [{ firstName: regex }, { lastName: regex }],
     };
 
     if (nameParts.length > 1) {
-      // Adjust regex to match both first and last names
       regex = nameParts.map((name) => new RegExp(`^${name}$`, "i"));
 
       searchQuery = {
@@ -229,6 +226,27 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
       match: { _id: { $exists: true } },
     });
 
+  let clonedQuery = SubscriptionModel.find(query)
+    .select("startDate paidAmount status subscriptionType duration")
+    .populate({
+      path: "trainerId",
+      select: "firstName lastName",
+      justOne: true,
+      match: { _id: { $exists: true } },
+    })
+    .populate({
+      path: "traineeId",
+      select: "firstName lastName",
+      justOne: true,
+      match: { _id: { $exists: true } },
+    })
+    .populate({
+      path: "package",
+      select: "packageName -_id",
+      justOne: true,
+      match: { _id: { $exists: true } },
+    });
+
   let apiFeatures = new ApiFeatures(baseQuery, req.query)
     .filter()
     .sort()
@@ -236,6 +254,7 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     .fields();
 
   let subscriptions = await apiFeatures.mongooseQuery;
+  let allSubscriptions = await clonedQuery;
 
   if (!subscriptions || subscriptions.length === 0) {
     return res.status(200).json({
@@ -246,10 +265,11 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
       limit: apiFeatures.limit,
       message: "No subscriptions found",
       data: [],
+      allData: [],
     });
   }
 
-  const data = subscriptions.map((subscription) => ({
+  const mapSubscription = (subscription) => ({
     id: subscription._id,
     trainerName: subscription.trainerId
       ? `${subscription.trainerId.firstName} ${subscription.trainerId.lastName}`
@@ -263,7 +283,10 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     duration: subscription.duration,
     subscriptionType: subscription.subscriptionType,
     status: subscription.status,
-  }));
+  });
+
+  const data = subscriptions.map(mapSubscription);
+  const allData = allSubscriptions.map(mapSubscription);
 
   let totalCount = await SubscriptionModel.countDocuments(query);
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
@@ -276,6 +299,7 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
     limit: apiFeatures.limit,
     message: "Subscriptions information retrieved successfully",
     data,
+    allData,
   });
 });
 
