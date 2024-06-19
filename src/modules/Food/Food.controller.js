@@ -6,9 +6,88 @@ import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import { nutritionModel } from "../../../Database/models/nutrition.model.js";
 
+// async function handleFoodImageUpload(user, file) {
+//   const folderName = determineFolderName({ user }, "foodImage");
+//   const uploadResult = await uploadImageToCloudinary(file, folderName);
+//   if (uploadResult) {
+//     return {
+//       photoUrl: uploadResult.url,
+//     };
+//   } else {
+//     throw new Error("Failed to upload image");
+//   }
+// }
+// const addFood = catchAsyncError(async (req, res, next) => {
+//   const {
+//     foodname,
+//     baseMacro,
+//     servingUnit,
+//     category,
+//     foodAllergens,
+//     diseaseCompatibility,
+//     description,
+//     per,
+//     dietType,
+//     mealtype,
+//     religionrestriction,
+//   } = req.body;
+//   const macros = {
+//     calories: req.body["macros.calories"],
+//     proteins: req.body["macros.proteins"],
+//     fats: req.body["macros.fats"],
+//     carbs: req.body["macros.carbs"],
+//   };
+
+//   let foodImage = null;
+
+//   if (req.file) {
+//     const uploadResult = await handleFoodImageUpload(req.user, req.file);
+//     if (uploadResult) {
+//       foodImage = uploadResult.photoUrl;
+//     } else {
+//       return next(new Error("Failed to upload image"));
+//     }
+//   }
+
+//   let Trainer, admin;
+//   if (req.user.payload.role === "trainer") {
+//     Trainer = req.user.payload.id;
+//   } else {
+//     admin = req.user.payload.id;
+//   }
+
+//   const data = new foodModel({
+//     foodname,
+//     foodImage,
+//     macros,
+//     baseMacro,
+//     servingUnit,
+//     category,
+//     foodAllergens,
+//     diseaseCompatibility,
+//     description,
+//     per,
+//     dietType,
+//     mealtype,
+//     religionrestriction,
+//     Trainer,
+//     admin,
+//   });
+
+//   await data.save();
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Food added successfully",
+//     data,
+//   });
+// });
+
 async function handleFoodImageUpload(user, file) {
   const folderName = determineFolderName({ user }, "foodImage");
-  const uploadResult = await uploadImageToCloudinary(file, folderName);
+  console.log("handleFoodImageUpload file:", file);
+  const input = file.buffer || file.path;
+  const uploadResult = await uploadImageToCloudinary(input, folderName);
   if (uploadResult) {
     return {
       photoUrl: uploadResult.url,
@@ -17,6 +96,7 @@ async function handleFoodImageUpload(user, file) {
     throw new Error("Failed to upload image");
   }
 }
+
 const addFood = catchAsyncError(async (req, res, next) => {
   const {
     foodname,
@@ -82,6 +162,7 @@ const addFood = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+
 const updateFood = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
   let data = await foodModel.findByIdAndUpdate(id, req.body, {

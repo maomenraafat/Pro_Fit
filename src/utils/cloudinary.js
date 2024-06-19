@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { readFileSync, unlinkSync } from "fs";
 import { createHash } from "crypto";
 import streamifier from "streamifier";
+
 dotenv.config();
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,54 +11,29 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// const generateImageHash = (filePath) => {
-//   const fileBuffer = readFileSync(filePath);
-//   const hashSum = createHash("sha256");
-//   hashSum.update(fileBuffer);
-//   return hashSum.digest("hex");
-// };
-
-// const uploadImageToCloudinary = async (file, folderName, existingImageHash) => {
-//   const newImageHash = generateImageHash(file.path);
-
-//   if (newImageHash === existingImageHash) {
-//     console.log("Image is the same as the existing one. Skipping upload.");
-//     unlinkSync(file.path);
-//     return null;
-//   }
-
-//   try {
-//     const fileName = file.filename;
-//     const result = await cloudinary.uploader.upload(file.path, {
-//       folder: folderName,
-//       public_id: fileName.replace(/\.jpeg|\.jpg|\.png|\.gif/, ""),
-//       resource_type: "auto",
-//     });
-
-//     if (result) {
-//       unlinkSync(file.path);
-//       return { url: result.secure_url, hash: newImageHash };
-//     }
-//     return null;
-//   } catch (error) {
-//     console.error("Upload failed:", error);
-//     throw new Error("Failed to upload image to Cloudinary: " + error.message);
-//   }
-// };
-
 const generateImageHash = (input) => {
+  console.log("generateImageHash input type:", typeof input, input);
   let fileBuffer;
   if (Buffer.isBuffer(input)) {
     fileBuffer = input;
-  } else {
+  } else if (typeof input === "string") {
     fileBuffer = readFileSync(input);
+  } else {
+    throw new TypeError(
+      "The input must be a Buffer or a string representing the file path."
+    );
   }
   const hashSum = createHash("sha256");
   hashSum.update(fileBuffer);
   return hashSum.digest("hex");
 };
 
-const uploadImageToCloudinary = async (input, folderName, existingImageHash) => {
+const uploadImageToCloudinary = async (
+  input,
+  folderName,
+  existingImageHash
+) => {
+  console.log("uploadImageToCloudinary input:", input);
   const newImageHash = generateImageHash(input);
 
   if (newImageHash === existingImageHash) {
@@ -75,7 +51,11 @@ const uploadImageToCloudinary = async (input, folderName, existingImageHash) => 
         (error, result) => {
           if (error) {
             console.error("Upload failed:", error);
-            return reject(new Error("Failed to upload image to Cloudinary: " + error.message));
+            return reject(
+              new Error(
+                "Failed to upload image to Cloudinary: " + error.message
+              )
+            );
           }
           resolve({ url: result.secure_url, hash: newImageHash });
         }
