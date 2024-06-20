@@ -529,7 +529,26 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
     allData: allSubscriptions,
   });
 });
+const trackingCurrentTraineePlan = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.params.id;
 
+  if (!traineeId) {
+    return res.status(400).json({ message: "Trainee ID is required" });
+  }
+  const nutritionData = await getNutritionPlanData(traineeId);
+  res.status(200).json({
+    success: true,
+    message: "Successfully retrieved nutrition tracking data",
+    data: {
+      Diet: nutritionData,
+      Workout: {
+        totalExercises: 0,
+        totalExercisesDone: 0,
+        percentage: 0,
+      },
+    },
+  });
+});
 const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const traineeId = req.params.id;
@@ -808,13 +827,15 @@ const getLastFiveHeartRateRecords = catchAsyncError(async (req, res) => {
   }
 
   // Ensure only bpm and createdAt fields are included
-  lastFiveHeartRateRecords = lastFiveHeartRateRecords.map(record => ({
+  lastFiveHeartRateRecords = lastFiveHeartRateRecords.map((record) => ({
     bpm: record.bpm,
-    createdAt: record.createdAt
+    createdAt: record.createdAt,
   }));
 
   // Sort the records again by date in ascending order
-  lastFiveHeartRateRecords = lastFiveHeartRateRecords.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  lastFiveHeartRateRecords = lastFiveHeartRateRecords.sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+  );
 
   res.status(200).json({
     success: true,
@@ -1113,6 +1134,7 @@ export {
   createTraineeCustomizePlan,
   makeRequestAssessment,
   getTraineesSubscription,
+  trackingCurrentTraineePlan,
   trackingTraineePlans,
   updateTraineeWaterGoal,
   getTraineeWaterIntakeForTrainer,
@@ -1122,5 +1144,5 @@ export {
   getTraineeLatestSleepData,
   getTraineeProgressForTrainer,
   getDietAssessmentMeasurementsForTrainer,
-  getLastFiveHeartRateRecords
+  getLastFiveHeartRateRecords,
 };

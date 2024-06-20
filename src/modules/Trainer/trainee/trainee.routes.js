@@ -63,6 +63,12 @@ trainerTraineesRouter.get(
   trainee.getTraineesSubscription
 );
 trainerTraineesRouter.get(
+  "/trackingCurrentTraineePlan/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.trackingCurrentTraineePlan
+);
+trainerTraineesRouter.get(
   "/trackingTraineePlans/:id",
   verifyToken,
   allowedTo("trainer"),
