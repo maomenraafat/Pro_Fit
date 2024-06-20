@@ -365,7 +365,7 @@ const getAllSubscriptions = catchAsyncError(async (req, res, next) => {
   }));
 
   let apiFeatures = new ApiFeatures(
-    SubscriptionModel.find(queryConditions),
+    SubscriptionModel.find(baseQuery),
     req.query
   )
     .filter()
