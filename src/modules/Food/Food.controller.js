@@ -218,6 +218,8 @@ const getTrainerFood = catchAsyncError(async (req, res, next) => {
   });
 });
 const getProfitFoods = catchAsyncError(async (req, res, next) => {
+  const allData = await foodModel.find({ Trainer: null });
+
   let apiFeatures = new ApiFeatures(
     foodModel.find({ Trainer: null }),
     req.query
@@ -248,6 +250,7 @@ const getProfitFoods = catchAsyncError(async (req, res, next) => {
     Page: apiFeatures.page,
     limit: apiFeatures.limit,
     data,
+    allData,
   });
 });
 const getAllFoods = catchAsyncError(async (req, res, next) => {

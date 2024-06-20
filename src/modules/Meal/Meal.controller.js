@@ -285,6 +285,8 @@ const getTrainerMeals = catchAsyncError(async (req, res, next) => {
 //   });
 // });
 const getProfitMeals = catchAsyncError(async (req, res, next) => {
+  const allData = await mealModel.find({ Trainer: null });
+
   let apiFeatures = new ApiFeatures(
     mealModel.find({ Trainer: null }),
     req.query
@@ -319,6 +321,7 @@ const getProfitMeals = catchAsyncError(async (req, res, next) => {
     Page: apiFeatures.page,
     limit: apiFeatures.limit,
     data,
+    allData,
   });
 });
 // const getAllMeals = catchAsyncError(async (req, res, next) => {

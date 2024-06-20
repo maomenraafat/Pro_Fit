@@ -47,7 +47,9 @@ const updatePersonalInfo = catchAsyncError(async (req, res, next) => {
   }
   if (req.files["profilePhoto"] && req.files["profilePhoto"][0]) {
     const file = req.files["profilePhoto"][0];
-    const imageUploadResult = await handleImageUpload(admin, file);
+    const fileBuffer = fs.readFileSync(file.path);
+
+    const imageUploadResult = await handleImageUpload(admin, fileBuffer);
     if (imageUploadResult) {
       updateData = { ...updateData, ...imageUploadResult };
     }
@@ -79,6 +81,90 @@ const getAdminInfo = catchAsyncError(async (req, res, next) => {
   });
 });
 
+// const getSystemUsers = catchAsyncError(async (req, res, next) => {
+//   const userModel = req.query.users === "trainee" ? traineeModel : trainerModel;
+//   const isTrainee = req.query.users === "trainee";
+//   let baseQuery = userModel
+//     .find()
+//     .select(
+//       "firstName lastName email profilePhoto phoneNumber status createdAt"
+//     );
+//   if (isTrainee) {
+//     baseQuery = baseQuery
+//       .populate({
+//         path: "package",
+//         select: "packageName packageType -_id",
+//       })
+//       .populate({
+//         path: "assignedTrainer",
+//         select: "firstName lastName -_id",
+//       });
+//   } else {
+//     baseQuery = baseQuery.select("paidAmount");
+//   }
+//   let apiFeatures = new ApiFeatures(baseQuery, req.query)
+//     .search()
+//     .filter()
+//     .sort()
+//     .paginate()
+//     .fields();
+
+//   let users = await apiFeatures.mongooseQuery;
+//   if (!users || users.length === 0) {
+//     res.status(200).json({
+//       success: true,
+//       totalDocuments: 0,
+//       totalPages: 0,
+//       page: apiFeatures.page,
+//       limit: apiFeatures.limit,
+//       message: "No data found",
+//       data: [],
+//       allData: [],
+//     });
+//     return;
+//   }
+
+//   if (!isTrainee) {
+//     await Promise.all(
+//       users.map(async (user) => {
+//         user.activeSubscribers = await user.fetchActiveSubscribers();
+//         user.paidAmount = await user.calculateTotalPaidAmount();
+//         await user.save();
+//       })
+//     );
+//   }
+//   const data = users.map((user) => {
+//     const userObject = user.toObject({ virtuals: true });
+//     userObject.Registration_Date = userObject.createdAt;
+//     delete userObject.createdAt;
+//     if (!isTrainee) {
+//       delete userObject.updatedAt;
+//     }
+//     return userObject;
+//   });
+
+//   const allUsers = await userModel
+//     .find()
+//     .select(
+//       "firstName lastName email profilePhoto phoneNumber status createdAt"
+//     );
+//   const allData = allUsers.map((user) => user.toObject({ virtuals: true }));
+
+//   let totalCount = await userModel
+//     .find(apiFeatures.mongooseQuery.getQuery())
+//     .countDocuments();
+//   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+
+//   res.status(200).json({
+//     success: true,
+//     totalDocuments: totalCount,
+//     totalPages: totalPages,
+//     Page: apiFeatures.page,
+//     limit: apiFeatures.limit,
+//     data,
+//     allData,
+//   });
+// });
 const getSystemUsers = catchAsyncError(async (req, res, next) => {
   const userModel = req.query.users === "trainee" ? traineeModel : trainerModel;
   const isTrainee = req.query.users === "trainee";
@@ -141,12 +227,43 @@ const getSystemUsers = catchAsyncError(async (req, res, next) => {
     return userObject;
   });
 
-  const allUsers = await userModel
+  const allUsersQuery = userModel
     .find()
     .select(
       "firstName lastName email profilePhoto phoneNumber status createdAt"
     );
-  const allData = allUsers.map((user) => user.toObject({ virtuals: true }));
+
+  if (isTrainee) {
+    allUsersQuery
+      .populate({
+        path: "package",
+        select: "packageName packageType -_id",
+      })
+      .populate({
+        path: "assignedTrainer",
+        select: "firstName lastName -_id",
+      });
+  } else {
+    allUsersQuery.select("paidAmount");
+  }
+
+  const allUsers = await allUsersQuery;
+
+  const allData = await Promise.all(
+    allUsers.map(async (user) => {
+      if (!isTrainee) {
+        user.activeSubscribers = await user.fetchActiveSubscribers();
+        user.paidAmount = await user.calculateTotalPaidAmount();
+      }
+      const userObject = user.toObject({ virtuals: true });
+      userObject.Registration_Date = userObject.createdAt;
+      delete userObject.createdAt;
+      if (!isTrainee) {
+        delete userObject.updatedAt;
+      }
+      return userObject;
+    })
+  );
 
   let totalCount = await userModel
     .find(apiFeatures.mongooseQuery.getQuery())
