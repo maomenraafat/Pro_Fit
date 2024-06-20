@@ -12,50 +12,43 @@ cloudinary.config({
 });
 
 const generateImageHash = (input) => {
-  console.log("generateImageHash input type:", typeof input, input);
+
   let fileBuffer;
   if (Buffer.isBuffer(input)) {
     fileBuffer = input;
-  } else if (typeof input === "string") {
+  } else if (typeof input === 'string') {
     fileBuffer = readFileSync(input);
+  } else if (input && typeof input === 'object' && typeof input.path === 'string') {
+    fileBuffer = readFileSync(input.path);
   } else {
-    throw new TypeError(
-      "The input must be a Buffer or a string representing the file path."
-    );
+    console.error("Invalid input:", input);
+    throw new TypeError("The input must be a Buffer, a string, or a Multer file object with a valid 'path' string.");
   }
+
   const hashSum = createHash("sha256");
   hashSum.update(fileBuffer);
   return hashSum.digest("hex");
 };
 
-const uploadImageToCloudinary = async (
-  input,
-  folderName,
-  existingImageHash
-) => {
-  console.log("uploadImageToCloudinary input:", input);
-  const newImageHash = generateImageHash(input);
-
-  if (newImageHash === existingImageHash) {
-    console.log("Image is the same as the existing one. Skipping upload.");
-    if (!Buffer.isBuffer(input)) {
-      unlinkSync(input);
-    }
-    return null;
-  }
+const uploadImageToCloudinary = async (input, folderName, existingImageHash) => {
 
   try {
+    const newImageHash = generateImageHash(input);
+
+    if (newImageHash === existingImageHash) {
+      if (!Buffer.isBuffer(input)) {
+        unlinkSync(input.path); 
+      }
+      return null;
+    }
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         { folder: folderName, resource_type: "auto" },
         (error, result) => {
           if (error) {
             console.error("Upload failed:", error);
-            return reject(
-              new Error(
-                "Failed to upload image to Cloudinary: " + error.message
-              )
-            );
+            return reject(new Error("Failed to upload image to Cloudinary: " + error.message));
           }
           resolve({ url: result.secure_url, hash: newImageHash });
         }
@@ -64,11 +57,11 @@ const uploadImageToCloudinary = async (
       if (Buffer.isBuffer(input)) {
         streamifier.createReadStream(input).pipe(uploadStream);
       } else {
-        streamifier.createReadStream(readFileSync(input)).pipe(uploadStream);
+        streamifier.createReadStream(readFileSync(input.path)).pipe(uploadStream);
       }
     });
   } catch (error) {
-    console.error("Upload failed:", error);
+    console.error("Upload failed with error:", error);
     throw new Error("Failed to upload image to Cloudinary: " + error.message);
   }
 };
