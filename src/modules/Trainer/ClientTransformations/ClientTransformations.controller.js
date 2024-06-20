@@ -45,7 +45,7 @@ const addClientTransformations = catchAsyncError(async (req, res, next) => {
     const file = req.files["beforeImage"][0];
     const imageUploadResult = await handleImageUpload(
       trainer,
-      file,
+      file.path,
       "beforeImage"
     );
     if (imageUploadResult) {
@@ -57,7 +57,7 @@ const addClientTransformations = catchAsyncError(async (req, res, next) => {
     const file = req.files["afterImage"][0];
     const imageUploadResult = await handleImageUpload(
       trainer,
-      file,
+      file.path,
       "afterImage"
     );
     if (imageUploadResult) {

@@ -89,7 +89,8 @@ const updatePersonalInfo = async (req, res, next) => {
   }
   if (req.files["profilePhoto"] && req.files["profilePhoto"][0]) {
     const file = req.files["profilePhoto"][0];
-    const imageUploadResult = await handleImageUpload(trainer, file);
+    const fileBuffer = fs.readFileSync(file.path);
+    const imageUploadResult = await handleImageUpload(trainer, fileBuffer);
     if (imageUploadResult) {
       updateData = { ...updateData, ...imageUploadResult };
     }
