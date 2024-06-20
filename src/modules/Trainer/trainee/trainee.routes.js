@@ -91,6 +91,13 @@ trainerTraineesRouter.patch(
   trainee.updateTraineeWaterGoal
 );
 
+trainerTraineesRouter.get(
+  "/water/last-seven-days/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeWeeklyWaterIntakeForTrainer
+);
+
 //GET endpoint to get Heart Rate Record of the trainer
 trainerTraineesRouter.get(
   "/heart-rating/:id",
@@ -100,10 +107,10 @@ trainerTraineesRouter.get(
 );
 
 trainerTraineesRouter.get(
-  "/heart-rating/last-five/:id",
+  "/heart-rating/last-seven-days/:id",
   verifyToken,
   allowedTo("trainer"),
-  trainee.getLastFiveHeartRateRecords
+  trainee.getLastSevenDaysHeartRateRecords
 );
 
 // GET endpoint for trainer to view a trainee's steps of today
@@ -112,6 +119,13 @@ trainerTraineesRouter.get(
   verifyToken,
   allowedTo("trainer"),
   trainee.getTodayStepsForTrainer
+);
+
+trainerTraineesRouter.get(
+  "/steps/last-seven-days/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getWeeklyStepsForTrainer
 );
 
 // PATCH endpoint for trainer to update a trainee's step goal
@@ -128,6 +142,13 @@ trainerTraineesRouter.get(
   verifyToken,
   allowedTo("trainer"),
   trainee.getTraineeLatestSleepData
+);
+
+trainerTraineesRouter.get(
+  "/sleep-tracking/last-seven-days/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getWeeklySleepForTrainer
 );
 
 // GET endpoint for trainer to view a trainee's progress entries

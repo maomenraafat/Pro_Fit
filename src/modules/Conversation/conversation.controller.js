@@ -18,7 +18,6 @@ const getAllConversations = catchAsyncError(async (req, res, next) => {
     select: "content createdAt",
   });
 
-  console.log(conversations);
   if (!conversations.length) {
     return next(new AppError("No conversations found", 404));
   }
@@ -42,24 +41,24 @@ const getAllConversations = catchAsyncError(async (req, res, next) => {
     const lastMessageContent = conversation.lastMessage ? conversation.lastMessage.content : "No messages yet";
     const lastMessageTime = conversation.lastMessage ? conversation.lastMessage.createdAt : "";
 
-    const participant = conversation.participants.find(p => p.participantId._id.toString() !== userId);
-    const participantInfo = participant ? participant.participantId : {};
+    const participant = conversation.participants.find(p => p.participantId && p.participantId._id.toString() !== userId);
+    const participantInfo = participant ? participant.participantId : null;
 
     return {
       _id: conversation._id,
-      participant: {
+      participant: participantInfo ? {
         _id: participantInfo._id,
-        firstName: participantInfo.firstName ? participantInfo.firstName : "Unknown",
-        lastName: participantInfo.lastName? participantInfo.lastName : "Unknown",
+        firstName: participantInfo.firstName || "Unknown",
+        lastName: participantInfo.lastName || "Unknown",
         profilePhoto: participantInfo.profilePhoto || "defaultProfilePhotoUrl",
         email: participantInfo.email || "unknown@example.com",
-      },
+      } : null,
       lastMessage: {
         content: lastMessageContent,
         createdAt: lastMessageTime
       }
     };
-  });
+  }).filter(conversation => conversation.participant !== null);
 
   res.status(200).json({
     success: true,

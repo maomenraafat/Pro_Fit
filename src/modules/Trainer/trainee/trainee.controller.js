@@ -677,7 +677,7 @@ const updateTraineeWaterGoal = catchAsyncError(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Water goal updated successfully.",
-    data: waterGoal,
+    data: { waterGoal },
   });
 });
 
@@ -715,26 +715,93 @@ const getTraineeWaterIntakeForTrainer = catchAsyncError(async (req, res) => {
   date.setUTCHours(0, 0, 0, 0);
 
   // Find today's water intake record for the trainee
-  const todayRecord = (await WaterRecord.findOne({
+  const todayRecord = await WaterRecord.findOne({
     trainee: id,
     date,
-  })) || { intake: 0 };
+  });
 
+  const intake = todayRecord ? todayRecord.intake : 0;
+  const recordId = todayRecord ? todayRecord._id : null;
   const waterGoal = trainee.waterGoal;
-  const percentageComplete = parseInt(
-    ((todayRecord.intake / waterGoal) * 100).toFixed(2)
-  );
+  const percentageComplete = parseInt(((intake / waterGoal) * 100).toFixed(2));
 
   res.status(200).json({
     success: true,
     message: "Today's water intake fetched successfully.",
     data: {
-      intake: todayRecord.intake,
+      // intake,
       goal: waterGoal,
-      percentageComplete,
+      // percentageComplete,
     },
   });
 });
+
+const getTraineeWeeklyWaterIntakeForTrainer = catchAsyncError(
+  async (req, res) => {
+    const { id } = req.params;
+    const trainerId = req.user.payload.id;
+
+    // Find the trainee
+    const trainee = await traineeModel.findById(id);
+    if (!trainee) {
+      return res.status(404).json({
+        success: false,
+        message: "Trainee not found.",
+      });
+    }
+
+    // Check if the trainee has an assigned trainer
+    if (!trainee.assignedTrainer) {
+      return res.status(403).json({
+        success: false,
+        message: "Trainee does not have an assigned trainer.",
+      });
+    }
+
+    // Check if the trainer making the request is assigned to the trainee
+    if (trainee.assignedTrainer.toString() !== trainerId) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You are not authorized to view the water intake details for this trainee.",
+      });
+    }
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
+    // Find water intake records for the last 7 days for the trainee
+    const weeklyRecords = await WaterRecord.find({
+      trainee: id,
+      date: { $gte: sevenDaysAgo, $lte: today },
+    }).sort({ date: 1 });
+
+    // Fill in missing days with intake: 0
+    const recordsMap = weeklyRecords.reduce((map, record) => {
+      map[record.date.toISOString().split("T")[0]] = record.intake;
+      return map;
+    }, {});
+
+    const last7Days = Array.from({ length: 7 }).map((_, index) => {
+      const date = new Date(sevenDaysAgo);
+      date.setDate(sevenDaysAgo.getDate() + index);
+      const dateString = date.toISOString();
+      return {
+        createdAt: dateString,
+        intake: recordsMap[dateString.split("T")[0]] || 0,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Weekly water intake fetched successfully.",
+      data: last7Days,
+    });
+  }
+);
 
 const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
   const trainerId = req.user.payload.id;
@@ -779,13 +846,12 @@ const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
     message: "Last heart rate record retrieved successfully.",
     data: {
       bpm: heartRateData,
-      date: recordDate,
+      createdAt: recordDate,
     },
   });
 });
 
-//Y-axis should be 40,60,80,100,120,140,160,180,200,220
-const getLastFiveHeartRateRecords = catchAsyncError(async (req, res) => {
+const getLastSevenDaysHeartRateRecords = catchAsyncError(async (req, res) => {
   const trainerId = req.user.payload.id;
   const { id } = req.params;
 
@@ -809,38 +875,47 @@ const getLastFiveHeartRateRecords = catchAsyncError(async (req, res) => {
     });
   }
 
-  // Get the last five heart rate records for the trainee
-  let lastFiveHeartRateRecords = await HeartRate.find({ trainee: id })
-    .sort({ _id: -1 })
-    .limit(5);
+  const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today
+  const sevenDaysAgo = moment(today)
+    .subtract(6, "days")
+    .startOf("day")
+    .toDate(); // Start of 6 days ago
 
-  const recordsCount = lastFiveHeartRateRecords.length;
+  // Get the heart rate records for the last 7 days for the trainee
+  let heartRateRecords = await HeartRate.find({
+    trainee: id,
+    createdAt: { $gte: sevenDaysAgo, $lte: today },
+  }).sort({ createdAt: 1 });
 
-  if (recordsCount < 5) {
-    const currentDate = new Date();
-    for (let i = 0; i < 5 - recordsCount; i++) {
-      lastFiveHeartRateRecords.push({
-        createdAt: currentDate,
-        bpm: 0,
-      });
-    }
-  }
+  // Map records to ensure all 7 days are included, even if some days have no records
+  const recordsMap = heartRateRecords.reduce((map, record) => {
+    const date = moment(record.createdAt)
+      .tz("Africa/Cairo")
+      .startOf("day")
+      .format("YYYY-MM-DD");
+    map[date] = { bpm: record.bpm, createdAt: record.createdAt.toISOString() };
+    return map;
+  }, {});
 
-  // Ensure only bpm and createdAt fields are included
-  lastFiveHeartRateRecords = lastFiveHeartRateRecords.map((record) => ({
-    bpm: record.bpm,
-    createdAt: record.createdAt,
-  }));
-
-  // Sort the records again by date in ascending order
-  lastFiveHeartRateRecords = lastFiveHeartRateRecords.sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-  );
+  const last7Days = Array.from({ length: 7 }).map((_, index) => {
+    const date = moment(sevenDaysAgo)
+      .add(index, "days")
+      .startOf("day")
+      .format("YYYY-MM-DD");
+    const record = recordsMap[date] || {
+      bpm: 0,
+      createdAt: moment(date).toISOString(),
+    };
+    return {
+      bpm: record.bpm,
+      createdAt: record.createdAt,
+    };
+  });
 
   res.status(200).json({
     success: true,
-    message: "Last five heart rate records retrieved successfully.",
-    data: lastFiveHeartRateRecords,
+    message: "Heart rate records for the last 7 days retrieved successfully.",
+    data: last7Days,
   });
 });
 
@@ -945,12 +1020,81 @@ const getTodayStepsForTrainer = catchAsyncError(async (req, res) => {
     success: true,
     message: "Today's steps fetched successfully.",
     data: {
-      stepsAndDistance: stepsAndDistance,
-      stepsGoalFormat: stepsGoalFormat,
-      calories: todayRecord.calories,
+      // stepsAndDistance: stepsAndDistance,
+      // stepsGoal: stepsGoalFormat,
+      // calories: todayRecord.calories,
       goal: stepGoal,
-      percentageComplete: parseFloat(percentage.toFixed(2)),
+      // percentageComplete: parseFloat(percentage.toFixed(2)),
     },
+  });
+});
+
+const getWeeklyStepsForTrainer = catchAsyncError(async (req, res) => {
+  const { id } = req.params;
+  const trainerId = req.user.payload.id;
+
+  const trainee = await traineeModel.findById(id);
+  if (!trainee) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee not found.",
+    });
+  }
+
+  // Check if the trainee has an assigned trainer
+  if (!trainee.assignedTrainer) {
+    return res.status(403).json({
+      success: false,
+      message: "Trainee does not have an assigned trainer.",
+    });
+  }
+
+  // Check if the trainer making the request is assigned to the trainee
+  if (trainee.assignedTrainer.toString() !== trainerId) {
+    return res.status(403).json({
+      success: false,
+      message: "You are not authorized to view the steps for this trainee.",
+    });
+  }
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
+
+  // Find step records for the last 7 days for the trainee
+  const weeklyRecords = await StepRecord.find({
+    trainee: id,
+    date: { $gte: sevenDaysAgo, $lte: today },
+  }).sort({ date: 1 });
+
+  // Fill in missing days with steps: 0, calories: 0
+  const recordsMap = weeklyRecords.reduce((map, record) => {
+    map[record.date.toISOString().split("T")[0]] = record;
+    return map;
+  }, {});
+
+  const last7Days = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + index);
+    const dateString = date.toISOString().split("T")[0];
+    const record = recordsMap[dateString] || {
+      steps: 0,
+      calories: 0,
+      date: dateString,
+    };
+    return {
+      createdAt: new Date(record.date).toISOString(), // Ensure date is in ISO format
+      steps: record.steps,
+      calories: record.calories,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Weekly steps fetched successfully.",
+    data: last7Days,
   });
 });
 
@@ -989,7 +1133,7 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
       message: "No sleep data found for this trainee.",
       data: {
         hoursSlept: "0 hrs 0 mins",
-        date: currentDate,
+        createdAt: currentDate,
       },
     });
   }
@@ -1010,8 +1154,84 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
       hoursSlept,
       fallAsleepTime: latestSleepData.fallAsleepTime.toISOString(),
       wakeUpTime: latestSleepData.wakeUpTime.toISOString(),
-      dateRecorded: latestSleepData.dateRecorded.toISOString(),
+      createdAt: latestSleepData.dateRecorded.toISOString(),
     },
+  });
+});
+
+const getWeeklySleepForTrainer = catchAsyncError(async (req, res) => {
+  const { id } = req.params;
+  const trainerId = req.user.payload.id;
+
+  const trainee = await traineeModel.findById(id);
+  if (!trainee) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee not found.",
+    });
+  }
+
+  // Check if the trainee has an assigned trainer
+  if (!trainee.assignedTrainer) {
+    return res.status(403).json({
+      success: false,
+      message: "Trainee does not have an assigned trainer.",
+    });
+  }
+
+  // Check if the trainer making the request is assigned to the trainee
+  if (trainee.assignedTrainer.toString() !== trainerId) {
+    return res.status(403).json({
+      success: false,
+      message:
+        "You are not authorized to view the sleep data for this trainee.",
+    });
+  }
+
+  const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today
+  const sevenDaysAgo = moment(today)
+    .subtract(6, "days")
+    .startOf("day")
+    .toDate(); // Start of 6 days ago
+
+  // Find sleep records for the last 7 days for the trainee
+  const weeklyRecords = await SleepTrack.find({
+    trainee: id,
+    dateRecorded: { $gte: sevenDaysAgo, $lte: today },
+  }).sort({ dateRecorded: 1 });
+
+  const recordsMap = weeklyRecords.reduce((map, record) => {
+    const date = moment(record.dateRecorded)
+      .tz("Africa/Cairo")
+      .startOf("day")
+      .format("YYYY-MM-DD");
+    const duration = moment.duration(
+      moment(record.wakeUpTime).diff(moment(record.fallAsleepTime))
+    );
+    const hoursSlept = duration.asHours();
+    map[date] = { hoursSlept, createdAt: moment(date).toISOString() };
+    return map;
+  }, {});
+
+  const last7Days = Array.from({ length: 7 }).map((_, index) => {
+    const date = moment(sevenDaysAgo)
+      .add(index, "days")
+      .startOf("day")
+      .toISOString();
+    const record = recordsMap[moment(date).format("YYYY-MM-DD")] || {
+      hoursSlept: 0,
+      createdAt: date,
+    };
+    return {
+      createdAt: record.createdAt,
+      hoursSlept: record.hoursSlept,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Weekly sleep data fetched successfully.",
+    data: last7Days,
   });
 });
 
@@ -1144,5 +1364,8 @@ export {
   getTraineeLatestSleepData,
   getTraineeProgressForTrainer,
   getDietAssessmentMeasurementsForTrainer,
-  getLastFiveHeartRateRecords,
+  getLastSevenDaysHeartRateRecords,
+  getWeeklySleepForTrainer,
+  getTraineeWeeklyWaterIntakeForTrainer,
+  getWeeklyStepsForTrainer,
 };
