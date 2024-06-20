@@ -52,41 +52,41 @@ const addSleepData = catchAsyncError(async (req, res) => {
 
 const getLatestSleepData = catchAsyncError(async (req, res) => {
     const traineeId = req.user.payload.id;
-  
+
     // Retrieve the latest sleep data for the trainee
     const latestSleepData = await SleepTrack.findOne({ trainee: traineeId })
                                              .sort({ dateRecorded: -1 })
                                              .limit(1); 
-  
+
     if (!latestSleepData) {
-      return res.status(404).json({
-        success: false,
-        message: "No sleep data found for this trainee."
-      });
+        return res.status(404).json({
+            success: false,
+            message: "No sleep data found for this trainee."
+        });
     }
-  
+
     // Format the times and date for display
     const fallAsleepTime = moment(latestSleepData.fallAsleepTime).tz("Africa/Cairo").format("hh:mm A");
     const wakeUpTime = moment(latestSleepData.wakeUpTime).tz("Africa/Cairo").format("hh:mm A");
     const dateRecorded = moment(latestSleepData.dateRecorded).tz("Africa/Cairo").format("YYYY-MM-DD");
-  
-    // Calculate hours and minutes slept
+
+    // Calculate hours slept as a number
     const duration = moment.duration(moment(latestSleepData.wakeUpTime).diff(moment(latestSleepData.fallAsleepTime)));
-    const hoursSlept = `${duration.hours()} hrs ${duration.minutes()} mins`;
-  
+    const hoursSlept = duration.asHours();  // Convert duration to hours as a number
+
     // Return the formatted data
     res.status(200).json({
-      success: true,
-      message: "Latest sleep data retrieved successfully.",
-      data: {
-        _id: latestSleepData._id,
-        hoursSlept,
-        fallAsleepTime,
-        wakeUpTime,
-        dateRecorded
-      }
+        success: true,
+        message: "Latest sleep data retrieved successfully.",
+        data: {
+            _id: latestSleepData._id,
+            hoursSlept,
+            fallAsleepTime,
+            wakeUpTime,
+            dateRecorded
+        }
     });
-  });
+});
 
 const getSleepData = catchAsyncError(async (req, res) => {
   const traineeId = req.user.payload.id;
