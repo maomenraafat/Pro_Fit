@@ -42,7 +42,7 @@ const addSleepData = catchAsyncError(async (req, res) => {
 
   const fallAsleepTimeDate = parsedFallAsleepTime.toDate();
   const wakeUpTimeDate = parsedWakeUpTime.toDate();
-  const dateRecorded = now.toDate(); // Capture the current date and time, adjusted as needed
+  const dateRecorded = moment().add(3, 'hours').toDate(); // Adding 3 hours to the current time to reflect Cairo time accurately
 
   const sleepData = await SleepTrack.create({
     trainee: traineeId,
