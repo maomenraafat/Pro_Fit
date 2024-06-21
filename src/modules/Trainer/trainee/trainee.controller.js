@@ -1233,7 +1233,6 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
   });
 });
 
-
 const getWeeklySleepForTrainer = catchAsyncError(async (req, res) => {
   const { id } = req.params;
   const trainerId = req.user.payload.id;

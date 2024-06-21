@@ -10,11 +10,18 @@ const addProgressPhoto = catchAsyncError(async (req, res) => {
   let imageUrl = null;
 
   // Check if the file is uploaded
-  if (req.file) {
+  if (req.file && req.file.path) {
     const folderName = `Progress/${traineeId}`;
-    const uploadResult = await uploadImageToCloudinary(req.file, folderName);
-    if (uploadResult && uploadResult.url) {
-      imageUrl = uploadResult.url;
+    try {
+      const uploadResult = await uploadImageToCloudinary(req.file.path, folderName);
+      if (uploadResult && uploadResult.url) {
+        imageUrl = uploadResult.url;
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload image to Cloudinary.",
+      });
     }
   }
 
