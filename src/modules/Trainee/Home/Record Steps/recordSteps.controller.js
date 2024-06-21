@@ -1,3 +1,4 @@
+import moment from "moment";
 import { traineeModel } from "../../../../../Database/models/Trainee.model.js";
 import { catchAsyncError } from "../../../../utils/catchAsyncError.js";
 import { StepRecord } from "./../../../../../Database/models/stepRecord.model.js";
@@ -146,4 +147,58 @@ const getStepGoalsList = catchAsyncError(async (req, res) => {
   });
 });
 
-export { setGoal, recordSteps, getTodaySteps,getStepGoalsList };
+const getWeeklyStepsForTrainee = catchAsyncError(async (req, res) => {
+  const traineeId = req.user.payload.id;
+
+  const trainee = await traineeModel.findById(traineeId);
+  if (!trainee) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee not found.",
+    });
+  }
+
+  // Get the current date in Egypt's timezone and adjust to the start of the day
+  const today = new Date();
+  today.setHours(today.getHours() + 3); 
+  today.setUTCHours(0, 0, 0, 0); 
+
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
+
+  // Find step records for the last 7 days for the trainee
+  const weeklyRecords = await StepRecord.find({
+    trainee: traineeId,
+    date: { $gte: sevenDaysAgo, $lte: today },
+  }).sort({ date: 1 });
+
+  // Map records to ensure each day has the record
+  const recordsMap = weeklyRecords.reduce((map, record) => {
+    const adjustedDate = moment(record.date).add(3, 'hours').toDate();
+    const date = moment(adjustedDate).startOf('day').format("YYYY-MM-DD");
+    map[date] = { steps: record.steps, calories: record.calories, date: adjustedDate };
+    return map;
+  }, {});
+
+  // Fill in missing days with steps: 0, calories: 0
+  const last7Days = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + index);
+    const dateString = date.toISOString().split('T')[0];
+    const record = recordsMap[dateString] || { steps: 0, calories: 0, date: dateString };
+    return {
+      steps: record.steps,
+      calories: record.calories,
+      createdAt: moment(record.date).toISOString(),
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Weekly steps fetched successfully.",
+    data: last7Days,
+  });
+});
+
+
+export { setGoal, recordSteps, getTodaySteps,getStepGoalsList,getWeeklyStepsForTrainee };

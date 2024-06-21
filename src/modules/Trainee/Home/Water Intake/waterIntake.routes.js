@@ -18,5 +18,7 @@ traineeWaterIntake.post("/fill-all", verifyToken, allowedTo("trainee"), waterInt
 // POST endpoint for resetting the daily water intake
 traineeWaterIntake.post("/reset", verifyToken, allowedTo("trainee"), waterIntake.resetIntake);
 
+// GET endpoint for fetching weekly water intake
+traineeWaterIntake.get("/weekly-water-intake", verifyToken, allowedTo("trainee"), waterIntake.getWeeklyWaterIntake);
 
 export default traineeWaterIntake;

@@ -1,4 +1,5 @@
 
+import moment from 'moment';
 import { traineeModel } from '../../../../../Database/models/Trainee.model.js';
 import { WaterRecord } from '../../../../../Database/models/waterIntake.model.js';
 import { catchAsyncError } from './../../../../utils/catchAsyncError.js';
@@ -160,10 +161,63 @@ const resetIntake = catchAsyncError(async (req, res) => {
     });
 });
 
+const getWeeklyWaterIntake = catchAsyncError(async (req, res) => {
+    const traineeId = req.user.payload.id;
+
+    const trainee = await traineeModel.findById(traineeId);
+    if (!trainee) {
+        return res.status(404).json({
+            success: false,
+            message: "Trainee not found.",
+        });
+    }
+
+    // Get the current date in Egypt's timezone and adjust to the start of the day
+    const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today
+    const sevenDaysAgo = moment(today)
+        .subtract(6, "days")
+        .startOf("day")
+        .toDate(); // Start of 6 days ago
+
+    // Find water intake records for the last 7 days for the trainee
+    let waterIntakeRecords = await WaterRecord.find({
+        trainee: traineeId,
+        date: { $gte: sevenDaysAgo, $lte: today },
+    }).sort({ date: 1 });
+
+    // Map records to ensure each day has the latest record
+    const recordsMap = waterIntakeRecords.reduce((map, record) => {
+        const adjustedCreatedAt = moment(record.createdAt).add(3, 'hours').toDate();
+        const date = moment(adjustedCreatedAt).startOf('day').format("YYYY-MM-DD");
+        if (!map[date] || moment(adjustedCreatedAt).isAfter(map[date].createdAt)) {
+            map[date] = { intake: record.intake, createdAt: adjustedCreatedAt };
+        }
+        return map;
+    }, {});
+
+    // Fill in missing days with intake: 0
+    const last7Days = Array.from({ length: 7 }).map((_, index) => {
+        const date = new Date(sevenDaysAgo);
+        date.setDate(sevenDaysAgo.getDate() + index);
+        const dateString = moment(date).startOf('day').format("YYYY-MM-DD");
+        const record = recordsMap[dateString] || { intake: 0, createdAt: moment(date).startOf('day').toISOString() };
+        return {
+            intake: record.intake,
+            createdAt: moment(record.createdAt).toISOString(),
+        };
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Water intake records for the last 7 days retrieved successfully.",
+        data: last7Days,
+    });
+});
 export{
     setWaterGoal,
     recordWaterIntake,
     getTodayWaterIntake,
     fillAll,
     resetIntake,
+    getWeeklyWaterIntake
 }

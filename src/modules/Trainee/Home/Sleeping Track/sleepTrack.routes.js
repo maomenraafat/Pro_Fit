@@ -10,7 +10,8 @@ traineesleepingTrack.get("/", verifyToken, allowedTo("trainee"), sleepTrack.getL
 
 // // GET endpoint for fetching today's Sleeping Track
 // traineesleepingTrack.get("/", verifyToken, allowedTo("trainee"), sleepTrack.getSleepData);
-
+// GET endpoint for fetching weekly sleep data
+traineesleepingTrack.get("/weekly-sleep", verifyToken, allowedTo("trainee"), sleepTrack.getWeeklySleepData);
 
 
 export default traineesleepingTrack;

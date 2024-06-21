@@ -16,5 +16,7 @@ tranieeRecordSteps.get("/", verifyToken, allowedTo("trainee"), steps.getTodaySte
 // GET endpoint for fetching step goals list
 tranieeRecordSteps.get("/step-goals", verifyToken, allowedTo("trainee"), steps.getStepGoalsList);
 
+// GET endpoint for fetching weekly steps
+tranieeRecordSteps.get("/weekly-steps", verifyToken, allowedTo("trainee"), steps.getWeeklyStepsForTrainee);
 
 export default tranieeRecordSteps;
