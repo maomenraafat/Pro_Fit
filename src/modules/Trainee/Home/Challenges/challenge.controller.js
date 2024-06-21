@@ -121,7 +121,7 @@ const updateChallenge = catchAsyncError(async (req, res) => {
   const traineeId = req.user.payload.id; // Assuming the user's ID is in the payload of the request
   const updates = req.body; // Collect all updates from the request body
 
-  console.log(updates);
+  // console.log(updates);
 
   // Check if the file is uploaded and update the image URL
   if (req.file) {

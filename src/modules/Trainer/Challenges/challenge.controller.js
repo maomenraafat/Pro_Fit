@@ -35,11 +35,18 @@ const addChallengeForTraineeByTrainer = catchAsyncError(async (req, res) => {
   let imageUrl = null;
 
   // Check if the file is uploaded
-  if (req.file) {
+  if (req.file && req.file.path) {
     const folderName = `Challenges/${id}`;
-    const uploadResult = await uploadImageToCloudinary(req.file, folderName);
-    if (uploadResult && uploadResult.url) {
-      imageUrl = uploadResult.url; // Capture the URL from Cloudinary upload
+    try {
+      const uploadResult = await uploadImageToCloudinary(req.file.path, folderName);
+      if (uploadResult && uploadResult.url) {
+        imageUrl = uploadResult.url; // Capture the URL from Cloudinary upload
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload image to Cloudinary.",
+      });
     }
   }
 
