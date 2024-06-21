@@ -5,6 +5,95 @@ import { trainerModel } from "../../../../Database/models/Trainer.model.js";
 import { determineFolderName } from "../../../multer/multer.js";
 import { uploadImageToCloudinary } from "../../../utils/cloudinary.js";
 
+// async function handleQualificationImageUpload(trainer, file) {
+//   if (!trainer) {
+//     throw new Error("Trainer not found");
+//   }
+
+//   const folderName = determineFolderName(
+//     { user: { payload: trainer } },
+//     "photo"
+//   );
+//   const existingImageHash = trainer.qualificationAndAchievementPhotoHash;
+//   if (!Buffer.isBuffer(file) && typeof file !== "string") {
+//     throw new TypeError(
+//       "The file must be a Buffer or a string representing the file path."
+//     );
+//   }
+//   const uploadResult = await uploadImageToCloudinary(
+//     file,
+//     folderName,
+//     existingImageHash
+//   );
+//   if (uploadResult) {
+//     return {
+//       photoUrl: uploadResult.url,
+//       photoHash: uploadResult.hash,
+//     };
+//   }
+
+//   throw new Error("Failed to upload image");
+// }
+
+// const addQualificationAndAchievement = catchAsyncError(
+//   async (req, res, next) => {
+//     const trainerId = req.user.payload.id;
+//     const trainer = await trainerModel.findById(trainerId);
+
+//     if (!trainer) {
+//       return next(new Error("Trainer not found"));
+//     }
+
+//     if (!req.file) {
+//       return next(
+//         new AppError(
+//           "Photo is required for qualifications and achievements",
+//           400
+//         )
+//       );
+//     }
+
+//     const imageUploadResult = await handleQualificationImageUpload(
+//       trainer,
+//       req.file.buffer
+//     );
+
+//     if (!imageUploadResult) {
+//       return next(new Error("Image upload failed"));
+//     }
+
+//     const existingQualification =
+//       await QualificationAndAchievementModel.findOne({
+//         trainer: trainerId,
+//         photo: imageUploadResult.photoUrl,
+//       });
+
+//     if (existingQualification) {
+//       return next(new AppError("This qualification already exists.", 400));
+//     }
+
+//     const data = {
+//       trainer: trainerId,
+//       photo: imageUploadResult.photoUrl,
+//     };
+
+//     const newQualificationAndAchievement = new QualificationAndAchievementModel(
+//       data
+//     );
+//     await newQualificationAndAchievement.save();
+//     trainer.qualificationsAndAchievements.push(
+//       newQualificationAndAchievement._id
+//     );
+//     await trainer.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Image and data saved successfully",
+//       data: newQualificationAndAchievement,
+//     });
+//   }
+// );
+
 async function handleQualificationImageUpload(trainer, file) {
   if (!trainer) {
     throw new Error("Trainer not found");
@@ -15,6 +104,12 @@ async function handleQualificationImageUpload(trainer, file) {
     "photo"
   );
   const existingImageHash = trainer.qualificationAndAchievementPhotoHash;
+
+  if (!Buffer.isBuffer(file) && typeof file !== "string") {
+    throw new TypeError(
+      "The file must be a Buffer or a string representing the file path."
+    );
+  }
 
   const uploadResult = await uploadImageToCloudinary(
     file,
@@ -49,9 +144,11 @@ const addQualificationAndAchievement = catchAsyncError(
       );
     }
 
+    console.log("req.file:", req.file);
+
     const imageUploadResult = await handleQualificationImageUpload(
       trainer,
-      req.file
+      req.file.path
     );
 
     if (!imageUploadResult) {

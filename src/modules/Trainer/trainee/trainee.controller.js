@@ -529,7 +529,26 @@ const getTraineesSubscription = catchAsyncError(async (req, res, next) => {
     allData: allSubscriptions,
   });
 });
+const trackingCurrentTraineePlan = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.params.id;
 
+  if (!traineeId) {
+    return res.status(400).json({ message: "Trainee ID is required" });
+  }
+  const nutritionData = await getNutritionPlanData(traineeId);
+  res.status(200).json({
+    success: true,
+    message: "Successfully retrieved nutrition tracking data",
+    data: {
+      Diet: nutritionData,
+      Workout: {
+        totalExercises: 0,
+        totalExercisesDone: 0,
+        percentage: 0,
+      },
+    },
+  });
+});
 const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const traineeId = req.params.id;
@@ -658,7 +677,7 @@ const updateTraineeWaterGoal = catchAsyncError(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Water goal updated successfully.",
-    data:{ waterGoal } ,
+    data: { waterGoal },
   });
 });
 
@@ -717,26 +736,27 @@ const getTraineeWaterIntakeForTrainer = catchAsyncError(async (req, res) => {
   });
 });
 
-const getTraineeWeeklyWaterIntakeForTrainer = catchAsyncError(async (req, res) => {
-  const { id } = req.params;
-  const trainerId = req.user.payload.id;
+const getTraineeWeeklyWaterIntakeForTrainer = catchAsyncError(
+  async (req, res) => {
+    const { id } = req.params;
+    const trainerId = req.user.payload.id;
 
-  // Find the trainee
-  const trainee = await traineeModel.findById(id);
-  if (!trainee) {
-    return res.status(404).json({
-      success: false,
-      message: "Trainee not found.",
-    });
-  }
+    // Find the trainee
+    const trainee = await traineeModel.findById(id);
+    if (!trainee) {
+      return res.status(404).json({
+        success: false,
+        message: "Trainee not found.",
+      });
+    }
 
-  // Check if the trainee has an assigned trainer
-  if (!trainee.assignedTrainer) {
-    return res.status(403).json({
-      success: false,
-      message: "Trainee does not have an assigned trainer.",
-    });
-  }
+    // Check if the trainee has an assigned trainer
+    if (!trainee.assignedTrainer) {
+      return res.status(403).json({
+        success: false,
+        message: "Trainee does not have an assigned trainer.",
+      });
+    }
 
   // Check if the trainer making the request is assigned to the trainee
   if (trainee.assignedTrainer.toString() !== trainerId) {
@@ -747,40 +767,40 @@ const getTraineeWeeklyWaterIntakeForTrainer = catchAsyncError(async (req, res) =
   }
 
   const today = new Date();
-  today.setHours(today.getHours() + 3); 
-  today.setUTCHours(0, 0, 0, 0); 
+  today.setUTCHours(0, 0, 0, 0);
 
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(today.getDate() - 6);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
 
-  // Find water intake records for the last 7 days for the trainee
-  const weeklyRecords = await WaterRecord.find({
-    trainee: id,
-    date: { $gte: sevenDaysAgo, $lte: today },
-  }).sort({ date: 1 });
+    // Find water intake records for the last 7 days for the trainee
+    const weeklyRecords = await WaterRecord.find({
+      trainee: id,
+      date: { $gte: sevenDaysAgo, $lte: today },
+    }).sort({ date: 1 });
 
-  // Fill in missing days with intake: 0
-  const recordsMap = weeklyRecords.reduce((map, record) => {
-    map[record.date.toISOString().split('T')[0]] = record.intake;
-    return map;
-  }, {});
+    // Fill in missing days with intake: 0
+    const recordsMap = weeklyRecords.reduce((map, record) => {
+      map[record.date.toISOString().split("T")[0]] = record.intake;
+      return map;
+    }, {});
 
-  const last7Days = Array.from({ length: 7 }).map((_, index) => {
-    const date = new Date(sevenDaysAgo);
-    date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = date.toISOString();
-    return {
-      createdAt: dateString,
-      intake: recordsMap[dateString.split('T')[0]] || 0,
-    };
-  });
+    const last7Days = Array.from({ length: 7 }).map((_, index) => {
+      const date = new Date(sevenDaysAgo);
+      date.setDate(sevenDaysAgo.getDate() + index);
+      const dateString = date.toISOString();
+      return {
+        createdAt: dateString,
+        intake: recordsMap[dateString.split("T")[0]] || 0,
+      };
+    });
 
-  res.status(200).json({
-    success: true,
-    message: "Weekly water intake fetched successfully.",
-    data: last7Days,
-  });
-});
+    res.status(200).json({
+      success: true,
+      message: "Weekly water intake fetched successfully.",
+      data: last7Days,
+    });
+  }
+);
 
 const getTraineeLatestHeartRateRecord = catchAsyncError(async (req, res) => {
   const trainerId = req.user.payload.id;
@@ -854,13 +874,11 @@ const getLastSevenDaysHeartRateRecords = catchAsyncError(async (req, res) => {
     });
   }
 
-  // Get the current date in Egypt's timezone and adjust to the start of the day
-  const today = new Date();
-  today.setHours(today.getHours() + 3); 
-  today.setUTCHours(0, 0, 0, 0); 
-
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(today.getDate() - 6);
+  const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today
+  const sevenDaysAgo = moment(today)
+    .subtract(6, "days")
+    .startOf("day")
+    .toDate(); // Start of 6 days ago
 
   // Get the heart rate records for the last 7 days for the trainee
   let heartRateRecords = await HeartRate.find({
@@ -1061,8 +1079,8 @@ const getWeeklyStepsForTrainer = catchAsyncError(async (req, res) => {
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = moment(date).startOf('day').format("YYYY-MM-DD");
-    const record = recordsMap[dateString] || { steps: 0, calories: 0, date: moment(date).startOf('day').toISOString() };
+    const dateString = date.toISOString().split('T')[0];
+    const record = recordsMap[dateString] || { steps: 0, calories: 0, date: dateString };
     return {
       steps: record.steps,
       calories: record.calories,
@@ -1162,12 +1180,16 @@ const getWeeklySleepForTrainer = catchAsyncError(async (req, res) => {
   if (trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to view the sleep data for this trainee.",
+      message:
+        "You are not authorized to view the sleep data for this trainee.",
     });
   }
 
-  const today = moment().tz("Africa/Cairo").endOf('day').toDate(); // End of today
-  const sevenDaysAgo = moment(today).subtract(6, 'days').startOf('day').toDate(); // Start of 6 days ago
+  const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today
+  const sevenDaysAgo = moment(today)
+    .subtract(6, "days")
+    .startOf("day")
+    .toDate(); // Start of 6 days ago
 
   // Find sleep records for the last 7 days for the trainee
   const weeklyRecords = await SleepTrack.find({
@@ -1176,16 +1198,27 @@ const getWeeklySleepForTrainer = catchAsyncError(async (req, res) => {
   }).sort({ dateRecorded: 1 });
 
   const recordsMap = weeklyRecords.reduce((map, record) => {
-    const date = moment(record.dateRecorded).tz("Africa/Cairo").startOf('day').format("YYYY-MM-DD");
-    const duration = moment.duration(moment(record.wakeUpTime).diff(moment(record.fallAsleepTime)));
+    const date = moment(record.dateRecorded)
+      .tz("Africa/Cairo")
+      .startOf("day")
+      .format("YYYY-MM-DD");
+    const duration = moment.duration(
+      moment(record.wakeUpTime).diff(moment(record.fallAsleepTime))
+    );
     const hoursSlept = duration.asHours();
     map[date] = { hoursSlept, createdAt: moment(date).toISOString() };
     return map;
   }, {});
 
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
-    const date = moment(sevenDaysAgo).add(index, 'days').startOf('day').toISOString();
-    const record = recordsMap[moment(date).format("YYYY-MM-DD")] || { hoursSlept: 0, createdAt: date };
+    const date = moment(sevenDaysAgo)
+      .add(index, "days")
+      .startOf("day")
+      .toISOString();
+    const record = recordsMap[moment(date).format("YYYY-MM-DD")] || {
+      hoursSlept: 0,
+      createdAt: date,
+    };
     return {
       createdAt: record.createdAt,
       hoursSlept: record.hoursSlept,
@@ -1318,6 +1351,7 @@ export {
   createTraineeCustomizePlan,
   makeRequestAssessment,
   getTraineesSubscription,
+  trackingCurrentTraineePlan,
   trackingTraineePlans,
   updateTraineeWaterGoal,
   getTraineeWaterIntakeForTrainer,
@@ -1330,5 +1364,5 @@ export {
   getLastSevenDaysHeartRateRecords,
   getWeeklySleepForTrainer,
   getTraineeWeeklyWaterIntakeForTrainer,
-  getWeeklyStepsForTrainer
+  getWeeklyStepsForTrainer,
 };
