@@ -203,22 +203,45 @@ const getNutritionFreePlansForTrainer = catchAsyncError(async (req, res, next) =
     return next(new AppError("No free diet plans found for this trainer", 404));
   }
 
-  const responseData = freePlans.map(plan => ({
-    id: plan._id,
-    planName: plan.planName,
-    dietType: plan.dietType,
-    description: plan.description,
-    calories: plan.planmacros.calories,
-    proteins: plan.planmacros.proteins,
-    carbs: plan.planmacros.carbs,
-    fats: plan.planmacros.fats,
-    rating: 4.3,
-    reviewCount: 119,
-    goal: plan.goal || "Weight Loss", 
-    duration: `${plan.daysCount} Days`,
-    meals: plan.days.length,
-    isFavorite: !!plan.isFavorite.length,
-  }));
+  // Aggregate ratings and reviews
+  const planIds = freePlans.map(plan => plan._id);
+  const ratingsData = await nutritionModel.aggregate([
+    { $match: { _id: { $in: planIds }, rating: { $ne: null } } },
+    {
+      $group: {
+        _id: "$_id",
+        averageRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 }
+      }
+    }
+  ]);
+
+  // Create a lookup map for ratings data
+  const ratingsMap = new Map();
+  ratingsData.forEach(data => {
+    ratingsMap.set(data._id.toString(), data);
+  });
+
+  // Map response data
+  const responseData = freePlans.map(plan => {
+    const ratingInfo = ratingsMap.get(plan._id.toString()) || { averageRating: 0, reviewCount: 0 };
+    return {
+      id: plan._id,
+      planName: plan.planName,
+      dietType: plan.dietType,
+      description: plan.description,
+      calories: plan.planmacros.calories,
+      proteins: plan.planmacros.proteins,
+      carbs: plan.planmacros.carbs,
+      fats: plan.planmacros.fats,
+      rating: ratingInfo.averageRating,
+      reviewCount: ratingInfo.reviewCount,
+      goal: plan.goal || "Weight Loss",
+      duration: `${plan.daysCount} Days`,
+      meals: plan.days.length,
+      isFavorite: !!plan.isFavorite.length,
+    };
+  });
 
   res.status(200).json({
     success: true,
@@ -281,6 +304,33 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
     { $unwind: "$trainerDetails" }
   );
 
+  // Calculate the average rating and review count for each plan
+  pipeline.push(
+    {
+      $lookup: {
+        from: "nutritions",
+        localField: "_id",
+        foreignField: "originalPlan",
+        as: "ratings",
+        pipeline: [
+          { $match: { rating: { $exists: true } } },
+          { $group: {
+            _id: "$originalPlan",
+            averageRating: { $avg: "$rating" },
+            reviewCount: { $sum: 1 }
+          }}
+        ]
+      }
+    },
+    {
+      $addFields: {
+        averageRating: { $arrayElemAt: ["$ratings.averageRating", 0] },
+        reviewCount: { $arrayElemAt: ["$ratings.reviewCount", 0] }
+      }
+    },
+    { $addFields: { averageRating: { $ifNull: ["$averageRating", 0] }, reviewCount: { $ifNull: ["$reviewCount", 0] } } }
+  );
+
   // Execute the aggregation pipeline
   const freePlans = await nutritionModel.aggregate(pipeline);
 
@@ -304,11 +354,11 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
       proteins: plan.planmacros.proteins,
       carbs: plan.planmacros.carbs,
       fats: plan.planmacros.fats,
-      rating: 4.3,
-      reviewCount: 119,
+      rating: plan.averageRating,
+      reviewCount: plan.reviewCount,
       goal: plan.goal || "Weight Loss",
       duration: `${plan.daysCount} Days`,
-      mealsCount: plan.days[0].mealsCount, // Meals count from the first day
+      mealsCount: plan.days[0].mealsCount,
       isFavorite: favoriteIds.has(plan._id.toString()),
       name: trainer ? `${trainer.firstName} ${trainer.lastName}` : null,
       profilePhoto: trainer ? trainer.profilePhoto : null

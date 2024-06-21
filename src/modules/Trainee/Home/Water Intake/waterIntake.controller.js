@@ -34,10 +34,12 @@ const setWaterGoal = catchAsyncError(async (req, res) => {
 
 const recordWaterIntake = catchAsyncError(async (req, res) => {
     const traineeId = req.user.payload.id;
-    const { amount = 250 } = req.body; // Default amount is 250 mL if not specified
+    const { amount = 250 } = req.body; 
 
+    // Create a new date object for the current time and adjust to Egypt's time zone
     const date = new Date();
-    date.setUTCHours(0, 0, 0, 0); // Normalize the date to the start of the day
+    date.setHours(date.getHours() + 3); 
+    date.setUTCHours(0, 0, 0, 0);
 
     // Fetch the trainee to get the water goal
     const trainee = await traineeModel.findById(traineeId);

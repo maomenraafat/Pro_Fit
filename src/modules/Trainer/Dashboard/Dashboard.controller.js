@@ -3,6 +3,7 @@ import { catchAsyncError } from "../../../utils/catchAsyncError.js";
 import mongoose from "mongoose";
 import { SubscriptionModel } from "../../../../Database/models/subscription.model.js";
 import { ApiFeatures } from "../../../utils/ApiFeatures.js";
+import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
 
 const performanceMetrics = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
@@ -931,6 +932,40 @@ const getAverageRating = catchAsyncError(async (req, res) => {
   });
 });
 
+const getDietPlanRatings = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
+
+  // Find all subscriptions for diet plans created by the trainer that have been rated
+  const subscriptions = await nutritionModel
+    .find({
+      trainer: trainerId,
+      rating: { $ne: null },
+    })
+    .populate("trainee", "firstName lastName email");
+
+  if (!subscriptions.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No ratings found for your diet plans.",
+    });
+  }
+
+  // Format the response
+  const ratings = subscriptions.map((subscription) => ({
+    firstName: subscription.trainee.firstName,
+    lastName: subscription.trainee.lastName,
+    email: subscription.trainee.email,
+    dietPlan: subscription.dietPlan,
+    rating: subscription.rating,
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: "Diet plan ratings retrieved successfully.",
+    data: ratings,
+  });
+});
+
 export {
   performanceMetrics,
   getDashboardData,
@@ -942,4 +977,5 @@ export {
   getSubscriptionsByStartDate,
   getActiveReadyDietTraineesDashboard,
   getAverageRating,
+  getDietPlanRatings,
 };

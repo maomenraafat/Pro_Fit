@@ -742,13 +742,13 @@ const getTraineeWeeklyWaterIntakeForTrainer = catchAsyncError(async (req, res) =
   if (trainee.assignedTrainer.toString() !== trainerId) {
     return res.status(403).json({
       success: false,
-      message:
-        "You are not authorized to view the water intake details for this trainee.",
+      message: "You are not authorized to view the water intake details for this trainee.",
     });
   }
 
   const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  today.setHours(today.getHours() + 3); 
+  today.setUTCHours(0, 0, 0, 0); 
 
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(today.getDate() - 6);
@@ -854,8 +854,13 @@ const getLastSevenDaysHeartRateRecords = catchAsyncError(async (req, res) => {
     });
   }
 
-  const today = moment().tz("Africa/Cairo").endOf('day').toDate(); // End of today
-  const sevenDaysAgo = moment(today).subtract(6, 'days').startOf('day').toDate(); // Start of 6 days ago
+  // Get the current date in Egypt's timezone and adjust to the start of the day
+  const today = new Date();
+  today.setHours(today.getHours() + 3); 
+  today.setUTCHours(0, 0, 0, 0); 
+
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
 
   // Get the heart rate records for the last 7 days for the trainee
   let heartRateRecords = await HeartRate.find({
@@ -863,19 +868,25 @@ const getLastSevenDaysHeartRateRecords = catchAsyncError(async (req, res) => {
     createdAt: { $gte: sevenDaysAgo, $lte: today },
   }).sort({ createdAt: 1 });
 
-  // Map records to ensure all 7 days are included, even if some days have no records
+  // Map records to ensure each day has the latest record
   const recordsMap = heartRateRecords.reduce((map, record) => {
-    const date = moment(record.createdAt).tz("Africa/Cairo").startOf('day').format("YYYY-MM-DD");
-    map[date] = { bpm: record.bpm, createdAt: record.createdAt.toISOString() };
+    const adjustedCreatedAt = moment(record.createdAt).add(3, 'hours').toDate();
+    const date = moment(adjustedCreatedAt).startOf('day').format("YYYY-MM-DD");
+    if (!map[date] || moment(adjustedCreatedAt).isAfter(map[date].createdAt)) {
+      map[date] = { bpm: record.bpm, createdAt: adjustedCreatedAt };
+    }
     return map;
   }, {});
 
+  // Fill in missing days with intake: 0
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
-    const date = moment(sevenDaysAgo).add(index, 'days').startOf('day').format("YYYY-MM-DD");
-    const record = recordsMap[date] || { bpm: 0, createdAt: moment(date).toISOString() };
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + index);
+    const dateString = moment(date).startOf('day').format("YYYY-MM-DD");
+    const record = recordsMap[dateString] || { bpm: 0, createdAt: moment(date).startOf('day').toISOString() };
     return {
       bpm: record.bpm,
-      createdAt: record.createdAt,
+      createdAt: moment(record.createdAt).toISOString(),
     };
   });
 
@@ -1024,8 +1035,10 @@ const getWeeklyStepsForTrainer = catchAsyncError(async (req, res) => {
     });
   }
 
+  // Get the current date in Egypt's timezone and adjust to the start of the day
   const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  today.setHours(today.getHours() + 3); 
+  today.setUTCHours(0, 0, 0, 0); 
 
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(today.getDate() - 6);
@@ -1036,21 +1049,24 @@ const getWeeklyStepsForTrainer = catchAsyncError(async (req, res) => {
     date: { $gte: sevenDaysAgo, $lte: today },
   }).sort({ date: 1 });
 
-  // Fill in missing days with steps: 0, calories: 0
+  // Map records to ensure each day has the record
   const recordsMap = weeklyRecords.reduce((map, record) => {
-    map[record.date.toISOString().split('T')[0]] = record;
+    const adjustedDate = moment(record.date).add(3, 'hours').toDate();
+    const date = moment(adjustedDate).startOf('day').format("YYYY-MM-DD");
+    map[date] = { steps: record.steps, calories: record.calories, date: adjustedDate };
     return map;
   }, {});
 
+  // Fill in missing days with steps: 0, calories: 0
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = date.toISOString().split('T')[0];
-    const record = recordsMap[dateString] || { steps: 0, calories: 0, date: dateString };
+    const dateString = moment(date).startOf('day').format("YYYY-MM-DD");
+    const record = recordsMap[dateString] || { steps: 0, calories: 0, date: moment(date).startOf('day').toISOString() };
     return {
-      createdAt: new Date(record.date).toISOString(), // Ensure date is in ISO format
       steps: record.steps,
       calories: record.calories,
+      createdAt: moment(record.date).toISOString(),
     };
   });
 

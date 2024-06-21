@@ -404,6 +404,54 @@ const areAllFoodsConsumed = (foods) => {
 };
 /*updateFoodConsumedStatus*/
 
+const rateDietPlan = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.user.payload.id;
+  const planId = req.params.id;
+  const { rating } = req.body;
+
+  // Validate rating presence and validity
+  if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+    return next(new AppError("Rating must be a number between 1 and 5", 400));
+  }
+
+  // Check if the trainee is subscribed to this diet plan
+  const subscription = await nutritionModel.findOne({
+    trainee: traineeId,
+    originalPlan: planId,
+    plantype: "Free plan",
+    status: "Current",
+  });
+
+  if (!subscription) {
+    return next(new AppError("You are not subscribed to this diet plan", 403));
+  }
+
+  // Update the subscription with the new rating
+  subscription.rating = rating;
+  await subscription.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Diet plan rated successfully.",
+  });
+});
+
+// const getRatedDietPlans = catchAsyncError(async (req, res, next) => {
+//   const traineeId = req.user.payload.id;
+
+//   // Find all subscriptions with a rating for the trainee
+//   const ratedPlans = await nutritionModel.find({
+//       trainee: traineeId,
+//       plantype: "Free plan",
+//       status: "Current",
+//       rating: { $exists: true }  
+//   }).select('originalPlan rating');  
+
+//   res.status(200).json({
+//       success: true,
+//       data: ratedPlans
+//   });
+// });
 export {
   getFreeDietPlans,
   dietPlanOverview,
@@ -413,4 +461,6 @@ export {
   //getSubscribedFreeDietPlan,
   // getCustomizeDietPlan,
   updateFoodConsumedStatus,
+  rateDietPlan,
+  // getRatedDietPlans
 };

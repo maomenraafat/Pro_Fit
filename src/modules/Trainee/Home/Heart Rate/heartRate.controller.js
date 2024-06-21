@@ -1,3 +1,4 @@
+import moment from "moment";
 import { HeartRate } from "../../../../../Database/models/heartRate.model.js";
 import { catchAsyncError } from "../../../../utils/catchAsyncError.js";
 
@@ -5,15 +6,22 @@ const recordHeartRate = catchAsyncError(async (req, res) => {
   const traineeId = req.user.payload.id;
   const { bpm } = req.body;
 
+  // Get the current time in Egypt's timezone
+  const egyptTime = moment().tz("Africa/Cairo");
+
   const newHeartRate = await HeartRate.create({
     trainee: traineeId,
     bpm: bpm,
+    createdAt: egyptTime.toDate(),
   });
 
   res.status(201).json({
     success: true,
     message: "Heart rate data recorded successfully.",
-    data: newHeartRate,
+    data: {
+      bpm: newHeartRate.bpm,
+      createdAt: egyptTime.format(), // Format to ISO string in Egypt's time zone
+    },
   });
 });
 

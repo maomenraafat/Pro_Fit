@@ -36,7 +36,10 @@ const setGoal = catchAsyncError(async (req, res) => {
 const recordSteps = catchAsyncError(async (req, res) => {
   const traineeId = req.user.payload.id;
   const { steps } = req.body;
+
+  // Create a new date object for the current time and adjust to Egypt's time zone
   const date = new Date();
+  date.setHours(date.getHours() + 3); 
   date.setUTCHours(0, 0, 0, 0);
 
   // Fetch the trainee to get the step goal
@@ -87,7 +90,6 @@ const recordSteps = catchAsyncError(async (req, res) => {
     message: "Steps recorded successfully.",
   });
 });
-
 const getTodaySteps = catchAsyncError(async (req, res) => {
   const traineeId = req.user.payload.id;
   const date = new Date();

@@ -256,6 +256,12 @@ const nutritionSchema = new Schema(
       ref: "nutrition",
       required: false,
     },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: null,
+    },
   },
   {
     timestamps: true,
