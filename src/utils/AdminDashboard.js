@@ -134,6 +134,27 @@ class AdminDashboard {
       })),
     };
   }
+  async getTotalSubscriptions() {
+    return await SubscriptionModel.countDocuments({});
+  }
+
+  async getSubscriptionsByStatus(status) {
+    return await SubscriptionModel.countDocuments({
+      status: status,
+    });
+  }
+
+  async getSubscriptionsStatusCounts() {
+    const activeCount = await this.getSubscriptionsByStatus("Active");
+    const cancelledCount = await this.getSubscriptionsByStatus("Cancelled");
+    const expiredCount = await this.getSubscriptionsByStatus("Expired");
+
+    return {
+      active: activeCount,
+      cancelled: cancelledCount,
+      expired: expiredCount,
+    };
+  }
   /**/
   async getAllSubscriptionsByStartDate() {
     const subscriptionsByDate = await SubscriptionModel.aggregate([

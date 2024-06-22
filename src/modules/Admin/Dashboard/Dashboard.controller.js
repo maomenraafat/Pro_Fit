@@ -53,11 +53,15 @@ const getDashboardData = catchAsyncError(async (req, res, next) => {
     trainerStatusCountsResult,
     traineeStatusCountsResult,
     subscriptionsByDateResult,
+    totalSubscriptionsResult,
+    subscriptionsStatusCountsResult,
   ] = await Promise.allSettled([
     adminDashboard.getCountOfSystemUsers(),
     adminDashboard.getTrainerStatusCounts(),
     adminDashboard.getTraineeStatusCounts(),
     adminDashboard.getAllSubscriptionsByStartDate(),
+    adminDashboard.getTotalSubscriptions(),
+    adminDashboard.getSubscriptionsStatusCounts(),
   ]);
 
   const CountOfSystemUsers =
@@ -80,6 +84,20 @@ const getDashboardData = catchAsyncError(async (req, res, next) => {
       ? subscriptionsByDateResult.value
       : { totalTrainees: 0, statuses: [] };
 
+  const totalSubscriptions =
+    totalSubscriptionsResult.status === "fulfilled"
+      ? totalSubscriptionsResult.value
+      : 0;
+  const subscriptionsStatusCounts =
+    subscriptionsStatusCountsResult.status === "fulfilled"
+      ? subscriptionsStatusCountsResult.value
+      : { active: 0, cancelled: 0, expired: 0 };
+
+  const subscriptionsDetails = [
+    { status: "Active", value: subscriptionsStatusCounts.active },
+    { status: "Cancelled", value: subscriptionsStatusCounts.cancelled },
+    { status: "Expired", value: subscriptionsStatusCounts.expired },
+  ];
   res.status(200).json({
     success: true,
     message: "Successfully retrieved dashboard data",
@@ -88,6 +106,10 @@ const getDashboardData = catchAsyncError(async (req, res, next) => {
       overAllTrainers: trainerStatusCounts,
       overAllTrainees: traineeStatusCounts,
       subscriptionsByDate,
+      subscriptions: {
+        total: totalSubscriptions,
+        details: subscriptionsDetails,
+      },
     },
   });
 });
