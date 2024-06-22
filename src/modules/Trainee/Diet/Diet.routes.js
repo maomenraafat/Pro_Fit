@@ -54,4 +54,12 @@ DietRouter.patch(
   Diet.updateFoodConsumedStatus
 );
 
+DietRouter.post(
+  "/rate-diet-plan/:id",
+  verifyToken,
+  allowedTo("trainee"),
+  Diet.rateDietPlan
+);
+// DietRouter.get("/rated-diet-plans", verifyToken, allowedTo("trainee"), Diet.getRatedDietPlans);
+
 export default DietRouter;

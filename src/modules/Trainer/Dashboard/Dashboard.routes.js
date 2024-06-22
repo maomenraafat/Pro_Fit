@@ -68,4 +68,10 @@ trainerDashboardRoutes.get(
   Dashboard.getAverageRating
 );
 
+trainerDashboardRoutes.get(
+  "/diet-plan-ratings",
+  verifyToken,
+  allowedTo("trainer"),
+  Dashboard.getDietPlanRatings
+);
 export default trainerDashboardRoutes;
