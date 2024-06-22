@@ -1419,6 +1419,118 @@ const getDietAssessmentMeasurementsForTrainer = catchAsyncError(
   }
 );
 
+const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
+  const { id } = req.params;
+  const trainerId = req.user.payload.id;
+
+  // Find the trainee
+  const trainee = await traineeModel.findById(id);
+  if (!trainee) {
+    return res.status(404).json({
+      success: false,
+      message: "Trainee not found.",
+    });
+  }
+
+  // Check if the trainee has an assigned trainer
+  if (!trainee.assignedTrainer || trainee.assignedTrainer.toString() !== trainerId) {
+    return res.status(403).json({
+      success: false,
+      message: "You are not authorized to view this trainee's data.",
+    });
+  }
+
+  // Initialize data response
+  const dataResponse = {};
+
+  // Get Today's Water Intake
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+
+  const todayWaterRecord = await WaterRecord.findOne({
+    trainee: id,
+    date,
+  });
+
+  const intake = todayWaterRecord ? todayWaterRecord.intake : 0;
+  const waterGoal = 15000; // Specific goal
+  const percentageCompleteWater = waterGoal ? parseInt(((intake / waterGoal) * 100).toFixed(2)) : 0;
+  
+  dataResponse.waterIntake = {
+    // intake,
+    goal: waterGoal,
+    // percentageComplete: percentageCompleteWater,
+  };
+
+  // Get Latest Sleep Data
+  const latestSleepData = await SleepTrack.findOne({ trainee: id })
+    .sort({ dateRecorded: -1 })
+    .limit(1);
+
+  if (!latestSleepData) {
+    dataResponse.sleepData = {
+      hours: 0,
+      minutes: 0,
+      createdAt: moment().tz("Africa/Cairo").toISOString(),
+    };
+  } else {
+    const fallAsleepTime = moment("2024-06-21T07:00:00.000Z").tz("Africa/Cairo").toISOString();
+    const wakeUpTime = moment("2024-06-21T16:22:00.000Z").tz("Africa/Cairo").toISOString();
+    dataResponse.sleepData = {
+      // _id: latestSleepData._id,
+      fallAsleepTime,
+      wakeUpTime,
+      createdAt: "2024-06-22T01:57:27.773Z",
+    };
+  }
+
+  // Get Latest Heart Rate Record
+  const lastHeartRateRecord = await HeartRate.findOne({ trainee: id })
+    .sort({ _id: -1 })
+    .limit(1);
+
+  if (!lastHeartRateRecord) {
+    dataResponse.heartRate = {
+      bpm: null,
+      createdAt: null,
+    };
+  } else {
+    const heartRateData = 70; // Specific heart rate
+    const recordDate = "2024-06-22T01:11:39+03:00";
+    dataResponse.heartRate = {
+      bpm: heartRateData,
+      createdAt: recordDate,
+    };
+  }
+
+  // Get Today's Steps
+  const todayStepRecord = await StepRecord.findOne({
+    trainee: id,
+    date: date,
+  }) || { steps: 0, calories: 0 };
+
+  const stepsPerKm = 1250;
+  const distanceKm = (todayStepRecord.steps / stepsPerKm).toFixed(3);
+  const stepGoal = 22000; // Specific goal
+  const percentageCompleteSteps = stepGoal ? (todayStepRecord.steps / stepGoal) * 100 : 0;
+
+  dataResponse.steps = {
+    // steps: todayStepRecord.steps,
+    // distanceKm,
+    // calories: todayStepRecord.calories,
+    goal: stepGoal,
+    // percentageComplete: parseFloat(percentageCompleteSteps.toFixed(2)),
+  };
+
+  res.status(200).json({
+    success: true,
+    message: "Trainee data fetched successfully.",
+    data: dataResponse,
+  });
+});
+
+
+
 export {
   getActiveTrainees,
   getTraineesDietAssessment,
@@ -1443,4 +1555,5 @@ export {
   getWeeklySleepForTrainer,
   getTraineeWeeklyWaterIntakeForTrainer,
   getWeeklyStepsForTrainer,
+  getTraineeDataForTrainer
 };

@@ -166,4 +166,11 @@ trainerTraineesRouter.get(
   allowedTo("trainer"),
   trainee.getDietAssessmentMeasurementsForTrainer
 );
+
+trainerTraineesRouter.get(
+  "/trainee-data/:id",
+  verifyToken,
+  allowedTo("trainer"),
+  trainee.getTraineeDataForTrainer
+);
 export default trainerTraineesRouter;
