@@ -423,6 +423,33 @@ const getTraineeDietAssessment = catchAsyncError(async (req, res, next) => {
   }
   res.status(200).json({ success: true, data });
 });
+const updateTraineeDietAssessment = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
+  const id = req.params.id;
+  const data = await traineeDietAssessmentModel.findOneAndUpdate(
+    {
+      trainer: trainerId,
+      trainee: id,
+      status: "Current",
+    },
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+  // .populate({
+  //   path: "trainee",
+  //   select:
+  //     " firstName  lastName email profilePhoto phoneNumber  dietAssessmentStatus",
+  // });
+  if (!data) {
+    res
+      .status(200)
+      .json({ success: true, message: "No nutrition plans found", data });
+  }
+  res.status(200).json({ success: true, data });
+});
 
 const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
@@ -1351,6 +1378,7 @@ export {
   getAllCustomizePlans,
   getTraineeCustomizePlan,
   getTraineeDietAssessment,
+  updateTraineeDietAssessment,
   createTraineeCustomizePlan,
   makeRequestAssessment,
   getTraineesSubscription,
