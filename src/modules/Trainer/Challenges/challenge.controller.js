@@ -171,17 +171,15 @@ const getChallengesForTraineeByTrainer = catchAsyncError(async (req, res) => {
   const currentTime = new Date();
 
   const formattedChallenges = challenges.map((challenge) => {
-    let formattedTimeElapsed;
+    let timeElapsed;
     if (challenge.endTime) {
       // Show zeroed time if given up
-      formattedTimeElapsed = "00 d : 00 h : 00 m : 00 s";
+      timeElapsed = 0;
     } else {
       // Calculate ongoing time
       const additionalTime =
         (currentTime.getTime() - challenge.startTime.getTime()) / 1000;
-      formattedTimeElapsed = formatDuration(
-        challenge.timeElapsed + additionalTime
-      );
+      timeElapsed = challenge.timeElapsed + additionalTime;
     }
 
     // Return only the specified fields
@@ -189,7 +187,7 @@ const getChallengesForTraineeByTrainer = catchAsyncError(async (req, res) => {
       _id: challenge._id,
       title: challenge.title,
       image: challenge.image,
-      formattedTimeElapsed,
+      timeElapsed,
     };
   });
 
@@ -200,6 +198,55 @@ const getChallengesForTraineeByTrainer = catchAsyncError(async (req, res) => {
   });
 });
 
+// const getChallengesForTraineeByTrainer = catchAsyncError(async (req, res) => {
+//   const { id } = req.params;
+//   const trainerId = req.user.payload.id;
+
+//   // Check if the trainee has an assigned trainer
+//   const trainee = await traineeModel.findById(id);
+//   if (!trainee || trainee.assignedTrainer.toString() !== trainerId) {
+//     return res.status(403).json({
+//       success: false,
+//       message: "You are not authorized to view challenges for this trainee.",
+//     });
+//   }
+
+//   // Find challenges for the trainee created by the trainer
+//   const challenges = await Challenge.find({
+//     trainee: id,
+//     createdBy: trainerId,
+//   });
+//   const currentTime = new Date();
+
+//   const formattedChallenges = challenges.map((challenge) => {
+//     let formattedTimeElapsed;
+//     if (challenge.endTime) {
+//       // Show zeroed time if given up
+//       formattedTimeElapsed = "00 d : 00 h : 00 m : 00 s";
+//     } else {
+//       // Calculate ongoing time
+//       const additionalTime =
+//         (currentTime.getTime() - challenge.startTime.getTime()) / 1000;
+//       formattedTimeElapsed = formatDuration(
+//         challenge.timeElapsed + additionalTime
+//       );
+//     }
+
+//     // Return only the specified fields
+//     return {
+//       _id: challenge._id,
+//       title: challenge.title,
+//       image: challenge.image,
+//       formattedTimeElapsed,
+//     };
+//   });
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Challenges retrieved successfully.",
+//     data: formattedChallenges,
+//   });
+// });
 export {
   addChallengeForTraineeByTrainer,
   updateChallengeForTraineeByTrainer,
