@@ -498,7 +498,7 @@ const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Customize Plan updated and duplicated successfully",
+    message: "Customize Plan created successfully",
     data: updatedPlan,
   });
 });
@@ -790,7 +790,8 @@ const getTraineeWeeklyWaterIntakeForTrainer = catchAsyncError(
     if (trainee.assignedTrainer.toString() !== trainerId) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to view the water intake details for this trainee.",
+        message:
+          "You are not authorized to view the water intake details for this trainee.",
       });
     }
 
@@ -932,8 +933,8 @@ const getLastSevenDaysHeartRateRecords = catchAsyncError(async (req, res) => {
 
   // Map records to ensure each day has the latest record
   const recordsMap = heartRateRecords.reduce((map, record) => {
-    const adjustedCreatedAt = moment(record.createdAt).add(3, 'hours').toDate();
-    const date = moment(adjustedCreatedAt).startOf('day').format("YYYY-MM-DD");
+    const adjustedCreatedAt = moment(record.createdAt).add(3, "hours").toDate();
+    const date = moment(adjustedCreatedAt).startOf("day").format("YYYY-MM-DD");
     if (!map[date] || moment(adjustedCreatedAt).isAfter(map[date].createdAt)) {
       map[date] = { value: record.bpm, createdAt: adjustedCreatedAt };
     }
@@ -944,8 +945,11 @@ const getLastSevenDaysHeartRateRecords = catchAsyncError(async (req, res) => {
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = moment(date).startOf('day').format("YYYY-MM-DD");
-    const record = recordsMap[dateString] || { value: 0, createdAt: moment(date).startOf('day').toISOString() };
+    const dateString = moment(date).startOf("day").format("YYYY-MM-DD");
+    const record = recordsMap[dateString] || {
+      value: 0,
+      createdAt: moment(date).startOf("day").toISOString(),
+    };
     return {
       _id: new ObjectId(),
       value: record.value,
@@ -1114,8 +1118,8 @@ const getWeeklyStepsForTrainer = catchAsyncError(async (req, res) => {
 
   // Map records to ensure each day has the record
   const recordsMap = weeklyRecords.reduce((map, record) => {
-    const adjustedDate = moment(record.date).add(3, 'hours').toDate();
-    const date = moment(adjustedDate).startOf('day').format("YYYY-MM-DD");
+    const adjustedDate = moment(record.date).add(3, "hours").toDate();
+    const date = moment(adjustedDate).startOf("day").format("YYYY-MM-DD");
     map[date] = { value: record.steps, date: adjustedDate };
     return map;
   }, {});
@@ -1124,7 +1128,7 @@ const getWeeklyStepsForTrainer = catchAsyncError(async (req, res) => {
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = date.toISOString().split("T")[0];
     const record = recordsMap[dateString] || { value: 0, date: dateString };
     return {
       _id: new ObjectId(), // Generate a new ObjectId
@@ -1244,8 +1248,12 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
   }
 
   // Format the times for display in ISO format
-  const fallAsleepTime = moment(latestSleepData.fallAsleepTime).tz("Africa/Cairo").toISOString();
-  const wakeUpTime = moment(latestSleepData.wakeUpTime).tz("Africa/Cairo").toISOString();
+  const fallAsleepTime = moment(latestSleepData.fallAsleepTime)
+    .tz("Africa/Cairo")
+    .toISOString();
+  const wakeUpTime = moment(latestSleepData.wakeUpTime)
+    .tz("Africa/Cairo")
+    .toISOString();
 
   // Return the formatted data
   res.status(200).json({
@@ -1255,7 +1263,9 @@ const getTraineeLatestSleepData = catchAsyncError(async (req, res) => {
       _id: latestSleepData._id,
       fallAsleepTime,
       wakeUpTime,
-      createdAt: moment(latestSleepData.dateRecorded).tz("Africa/Cairo").toISOString(),
+      createdAt: moment(latestSleepData.dateRecorded)
+        .tz("Africa/Cairo")
+        .toISOString(),
     },
   });
 });
@@ -1306,10 +1316,15 @@ const getWeeklySleepForTrainer = catchAsyncError(async (req, res) => {
       .tz("Africa/Cairo")
       .format("YYYY-MM-DD");
     const duration = moment.duration(
-      moment(record.wakeUpTime).tz("Africa/Cairo").diff(moment(record.fallAsleepTime).tz("Africa/Cairo"))
+      moment(record.wakeUpTime)
+        .tz("Africa/Cairo")
+        .diff(moment(record.fallAsleepTime).tz("Africa/Cairo"))
     );
     const value = duration.asHours();
-    map[date] = { value, createdAt: moment(record.dateRecorded).tz("Africa/Cairo").toISOString() };
+    map[date] = {
+      value,
+      createdAt: moment(record.dateRecorded).tz("Africa/Cairo").toISOString(),
+    };
     return map;
   }, {});
 

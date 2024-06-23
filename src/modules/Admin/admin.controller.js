@@ -7,7 +7,7 @@ import { uploadImageToCloudinary } from "../../utils/cloudinary.js";
 import { SubscriptionModel } from "../../../Database/models/subscription.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import { traineeModel } from "../../../Database/models/Trainee.model.js";
-
+import fs from "fs";
 async function handleImageUpload(admin, file) {
   const simulatedReq = {
     user: {
@@ -67,6 +67,7 @@ const updatePersonalInfo = catchAsyncError(async (req, res, next) => {
     data,
   });
 });
+
 const getAdminInfo = catchAsyncError(async (req, res, next) => {
   const id = req.user.payload.id;
   const data = await adminModel
