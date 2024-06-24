@@ -2,6 +2,8 @@ export class ApiFeatures {
   constructor(mongooseQuery, queryString) {
     this.mongooseQuery = mongooseQuery;
     this.queryString = queryString;
+    this.page = parseInt(queryString.page) || 1;
+    this.limit = parseInt(queryString.limit) || 10;
   }
 
   // paginate() {
@@ -21,7 +23,11 @@ export class ApiFeatures {
     this.page = page;
     this.limit = limit;
     this.skip = skip;
-    this.mongooseQuery = this.mongooseQuery.skip(skip).limit(limit);
+
+    this.mongooseQuery = this.mongooseQuery
+      .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(limit);
 
     return this;
   }
