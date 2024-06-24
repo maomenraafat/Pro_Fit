@@ -56,55 +56,73 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
   });
 });
 
+// const updateNutritionPlan = catchAsyncError(async (req, res, next) => {
+//   const id = req.params.id;
+//   const {
+//     planName,
+//     description,
+//     days,
+//     plantype,
+//     daymacros,
+//     planmacros,
+//     daysCount,
+//     goal,
+//     dietType,
+//     numberOfWeeks,
+//     published,
+//   } = req.body;
+
+//   const nutritionPlan = await nutritionModel.findById(id);
+
+//   if (!nutritionPlan) {
+//     return next(new AppError("No nutrition plan found with that ID", 404));
+//   }
+
+//   let updatedDays = [...nutritionPlan.days];
+
+//   days.forEach((updatedDay, index) => {
+//     updatedDays[index] = updatedDay;
+//     updatedDay._id = undefined;
+//     updatedDays[index + 7] = { ...updatedDay, day: `Day ${index + 8}` };
+//   });
+
+//   nutritionPlan.planName = planName;
+//   nutritionPlan.description = description;
+//   nutritionPlan.days = updatedDays;
+//   nutritionPlan.plantype = plantype;
+//   nutritionPlan.daymacros = daymacros;
+//   nutritionPlan.planmacros = planmacros;
+//   nutritionPlan.daysCount = updatedDays.length;
+//   nutritionPlan.goal = goal;
+//   nutritionPlan.dietType = dietType;
+//   nutritionPlan.numberOfWeeks = numberOfWeeks;
+//   nutritionPlan.published = published;
+
+//   await nutritionPlan.save();
+
+//   res.status(200).json({
+//     status: "success",
+//     message: "NutritionPlan updated successfully",
+//     data: nutritionPlan,
+//   });
+// });
 const updateNutritionPlan = catchAsyncError(async (req, res, next) => {
   const id = req.params.id;
-  const {
-    planName,
-    description,
-    days,
-    plantype,
-    daymacros,
-    planmacros,
-    daysCount,
-    goal,
-    dietType,
-    numberOfWeeks,
-  } = req.body;
 
-  const nutritionPlan = await nutritionModel.findById(id);
+  const data = await nutritionModel.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
 
-  if (!nutritionPlan) {
+  if (!data) {
     return next(new AppError("No nutrition plan found with that ID", 404));
   }
-
-  let updatedDays = [...nutritionPlan.days];
-
-  days.forEach((updatedDay, index) => {
-    updatedDays[index] = updatedDay;
-    updatedDay._id = undefined;
-    updatedDays[index + 7] = { ...updatedDay, day: `Day ${index + 8}` };
-  });
-
-  nutritionPlan.planName = planName;
-  nutritionPlan.description = description;
-  nutritionPlan.days = updatedDays;
-  nutritionPlan.plantype = plantype;
-  nutritionPlan.daymacros = daymacros;
-  nutritionPlan.planmacros = planmacros;
-  nutritionPlan.daysCount = updatedDays.length;
-  nutritionPlan.goal = goal;
-  nutritionPlan.dietType = dietType;
-  nutritionPlan.numberOfWeeks = numberOfWeeks;
-
-  await nutritionPlan.save();
-
   res.status(200).json({
     status: "success",
-    message: "NutritionPlan updated successfully",
-    data: nutritionPlan,
+    message: "Nutrition Plan updated successfully ",
+    data,
   });
 });
-
 const getNutritionMyPlans = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   let Query = { trainer: trainerId, plantype: "My plan" };
@@ -177,7 +195,7 @@ const getSpecificNutritionPlan = catchAsyncError(async (req, res, next) => {
   const data = await nutritionModel
     .findById(id)
     .select(
-      "planName dietType description days plantype daymacros planmacros daysCount  numberOfWeeks"
+      "planName dietType description days plantype daymacros planmacros daysCount  numberOfWeeks published"
     );
 
   if (!data) {
