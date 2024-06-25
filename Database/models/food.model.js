@@ -85,7 +85,6 @@ const foodSchema = new Schema(
     foodAllergens: {
       type: [String],
       enum: [
-        "",
         "Milk",
         "Eggs",
         "Fish",
@@ -112,12 +111,12 @@ const foodSchema = new Schema(
         "Oats",
         "Rye",
       ],
+      default: [],
     },
 
     diseaseCompatibility: {
       type: [String],
       enum: [
-        "",
         "Diabetes",
         "Hypertension",
         "Pregnancy",
@@ -136,22 +135,14 @@ const foodSchema = new Schema(
         "Hyperthyroidism",
         "Celiac Disease",
         "Salmonella infection",
-        "",
       ],
+      default: [],
     },
 
     religionrestriction: {
       type: [String],
-      enum: [
-        "",
-        "Alcohol",
-        "Pork",
-        "Carrion",
-        "Beef",
-        " Meat Products",
-        "Chicken",
-        "",
-      ],
+      enum: ["Alcohol", "Pork", "Carrion", "Beef", " Meat Products", "Chicken"],
+      default: [],
     },
 
     Trainer: {
