@@ -18,30 +18,30 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     numberOfWeeks,
   } = req.body;
 
-  let newDays = [...days];
+  // let newDays = [...days];
 
-  if (numberOfWeeks && numberOfWeeks > 1) {
-    const daysToDuplicate = days.slice(0, 7);
+  // if (numberOfWeeks && numberOfWeeks > 1) {
+  //   const daysToDuplicate = days.slice(0, 7);
 
-    for (let i = 1; i < numberOfWeeks; i++) {
-      daysToDuplicate.forEach((day, index) => {
-        const newDay = { ...day };
-        newDay._id = undefined;
-        newDay.day = `Day ${newDays.length + 1}`;
-        newDays.push(newDay);
-      });
-    }
-  }
+  //   for (let i = 1; i < numberOfWeeks; i++) {
+  //     daysToDuplicate.forEach((day, index) => {
+  //       const newDay = { ...day };
+  //       newDay._id = undefined;
+  //       newDay.day = `Day ${newDays.length + 1}`;
+  //       newDays.push(newDay);
+  //     });
+  //   }
+  // }
 
   const data = new nutritionModel({
     planName,
     trainer,
     description,
-    days: newDays,
+    days /*: newDays*/,
     plantype,
     daymacros,
     planmacros,
-    daysCount: newDays.length,
+    daysCount /*: newDays.length,*/,
     goal,
     dietType,
     numberOfWeeks,
