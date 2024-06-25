@@ -198,7 +198,9 @@ const getDietPlan = catchAsyncError(async (req, res, next) => {
     })
     .select(
       "_id planName trainer trainee daysCount numberofmeals startDate days planmacros plantype published status originalPlan timestamps"
-    );
+    )
+    .sort({ startDate: -1 })
+    .limit(1);
 
   if (DietPlan.length > 0) {
     return res.status(200).json({ success: true, data: DietPlan });
@@ -289,10 +291,10 @@ const updateFoodConsumedStatus = catchAsyncError(async (req, res, next) => {
   let plan = await nutritionModel.findById(planId);
 
   if (!plan) {
-    plan = await freeDietPlanSubscription.findById(planId);
-    if (!plan) {
-      return next(new AppError("Nutrition plan not found", 404));
-    }
+    // plan = await freeDietPlanSubscription.findById(planId);
+    // if (!plan) {
+    return next(new AppError("Nutrition plan not found", 404));
+    // }
   }
 
   if (!isValidMealIndex(plan, dayIndex, mealIndex)) {
@@ -410,7 +412,7 @@ const rateDietPlan = catchAsyncError(async (req, res, next) => {
   const { rating } = req.body;
 
   // Validate rating presence and validity
-  if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+  if (typeof rating !== "number" || rating < 1 || rating > 5) {
     return next(new AppError("Rating must be a number between 1 and 5", 400));
   }
 
@@ -444,8 +446,8 @@ const rateDietPlan = catchAsyncError(async (req, res, next) => {
 //       trainee: traineeId,
 //       plantype: "Free plan",
 //       status: "Current",
-//       rating: { $exists: true }  
-//   }).select('originalPlan rating');  
+//       rating: { $exists: true }
+//   }).select('originalPlan rating');
 
 //   res.status(200).json({
 //       success: true,
