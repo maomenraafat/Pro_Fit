@@ -439,17 +439,34 @@ const updateTraineeDietAssessment = catchAsyncError(async (req, res, next) => {
       runValidators: true,
     }
   );
-  // .populate({
-  //   path: "trainee",
-  //   select:
-  //     " firstName  lastName email profilePhoto phoneNumber  dietAssessmentStatus",
-  // });
   if (!data) {
     res
       .status(200)
       .json({ success: true, message: "No nutrition plans found", data });
   }
-  res.status(200).json({ success: true, data });
+  const plandata = await nutritionModel.findOneAndUpdate(
+    {
+      trainer: trainerId,
+      trainee: id,
+      status: "Current",
+    },
+    { targetmacros: req.body.macros },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+  // .populate({
+  //   path: "trainee",
+  //   select:
+  //     " firstName  lastName email profilePhoto phoneNumber  dietAssessmentStatus",
+  // });
+  if (!plandata) {
+    res
+      .status(200)
+      .json({ success: true, message: "No nutrition plans found 2", data });
+  }
+  res.status(200).json({ success: true, data, plandata });
 });
 
 const createTraineeCustomizePlan = catchAsyncError(async (req, res, next) => {
@@ -1475,7 +1492,10 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }
 
   // Check if the trainee has an assigned trainer
-  if (!trainee.assignedTrainer || trainee.assignedTrainer.toString() !== trainerId) {
+  if (
+    !trainee.assignedTrainer ||
+    trainee.assignedTrainer.toString() !== trainerId
+  ) {
     return res.status(403).json({
       success: false,
       message: "You are not authorized to view this trainee's data.",
@@ -1496,7 +1516,9 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
 
   const intake = todayWaterRecord ? todayWaterRecord.intake : 0;
   const waterGoal = 15000; // Specific goal
-  const percentageCompleteWater = waterGoal ? parseInt(((intake / waterGoal) * 100).toFixed(2)) : 0;
+  const percentageCompleteWater = waterGoal
+    ? parseInt(((intake / waterGoal) * 100).toFixed(2))
+    : 0;
 
   dataResponse.waterIntake = {
     intake,
@@ -1516,8 +1538,12 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       createdAt: moment().tz("Africa/Cairo").toISOString(),
     };
   } else {
-    const fallAsleepTime = moment("2024-06-21T07:00:00.000Z").tz("Africa/Cairo").toISOString();
-    const wakeUpTime = moment("2024-06-21T16:22:00.000Z").tz("Africa/Cairo").toISOString();
+    const fallAsleepTime = moment("2024-06-21T07:00:00.000Z")
+      .tz("Africa/Cairo")
+      .toISOString();
+    const wakeUpTime = moment("2024-06-21T16:22:00.000Z")
+      .tz("Africa/Cairo")
+      .toISOString();
     dataResponse.sleepData = {
       _id: latestSleepData._id,
       fallAsleepTime,
@@ -1546,15 +1572,17 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }
 
   // Get Today's Steps
-  const todayStepRecord = await StepRecord.findOne({
+  const todayStepRecord = (await StepRecord.findOne({
     trainee: id,
     date: date,
-  }) || { steps: 0, calories: 0 };
+  })) || { steps: 0, calories: 0 };
 
   const stepsPerKm = 1250;
   const distanceKm = (todayStepRecord.steps / stepsPerKm).toFixed(3);
   const stepGoal = 22000; // Specific goal
-  const percentageCompleteSteps = stepGoal ? (todayStepRecord.steps / stepGoal) * 100 : 0;
+  const percentageCompleteSteps = stepGoal
+    ? (todayStepRecord.steps / stepGoal) * 100
+    : 0;
 
   dataResponse.steps = {
     steps: todayStepRecord.steps,
@@ -1569,7 +1597,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   const sevenDaysAgo = moment(today)
     .subtract(6, "days")
     .startOf("day")
-    .toDate(); 
+    .toDate();
   // Get Weekly Sleep Data
   const weeklySleepRecords = await SleepTrack.find({
     trainee: id,
@@ -1581,10 +1609,15 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       .tz("Africa/Cairo")
       .format("YYYY-MM-DD");
     const duration = moment.duration(
-      moment(record.wakeUpTime).tz("Africa/Cairo").diff(moment(record.fallAsleepTime).tz("Africa/Cairo"))
+      moment(record.wakeUpTime)
+        .tz("Africa/Cairo")
+        .diff(moment(record.fallAsleepTime).tz("Africa/Cairo"))
     );
     const value = duration.asHours();
-    map[date] = { value, createdAt: moment(record.dateRecorded).tz("Africa/Cairo").toISOString() };
+    map[date] = {
+      value,
+      createdAt: moment(record.dateRecorded).tz("Africa/Cairo").toISOString(),
+    };
     return map;
   }, {});
 
@@ -1614,8 +1647,8 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }).sort({ date: 1 });
 
   const stepRecordsMap = weeklyStepRecords.reduce((map, record) => {
-    const adjustedDate = moment(record.date).add(3, 'hours').toDate();
-    const date = moment(adjustedDate).startOf('day').format("YYYY-MM-DD");
+    const adjustedDate = moment(record.date).add(3, "hours").toDate();
+    const date = moment(adjustedDate).startOf("day").format("YYYY-MM-DD");
     map[date] = { value: record.steps, date: adjustedDate };
     return map;
   }, {});
@@ -1623,7 +1656,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   const last7DaysSteps = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = date.toISOString().split("T")[0];
     const record = stepRecordsMap[dateString] || { value: 0, date: dateString };
     return {
       _id: new ObjectId(),
@@ -1641,8 +1674,8 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }).sort({ createdAt: 1 });
 
   const heartRateRecordsMap = heartRateRecords.reduce((map, record) => {
-    const adjustedCreatedAt = moment(record.createdAt).add(3, 'hours').toDate();
-    const date = moment(adjustedCreatedAt).startOf('day').format("YYYY-MM-DD");
+    const adjustedCreatedAt = moment(record.createdAt).add(3, "hours").toDate();
+    const date = moment(adjustedCreatedAt).startOf("day").format("YYYY-MM-DD");
     if (!map[date] || moment(adjustedCreatedAt).isAfter(map[date].createdAt)) {
       map[date] = { value: record.bpm, createdAt: adjustedCreatedAt };
     }
@@ -1652,8 +1685,11 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   const last7DaysHeartRate = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = moment(date).startOf('day').format("YYYY-MM-DD");
-    const record = heartRateRecordsMap[dateString] || { value: 0, createdAt: moment(date).startOf('day').toISOString() };
+    const dateString = moment(date).startOf("day").format("YYYY-MM-DD");
+    const record = heartRateRecordsMap[dateString] || {
+      value: 0,
+      createdAt: moment(date).startOf("day").toISOString(),
+    };
     return {
       _id: new ObjectId(),
       value: record.value,
@@ -1707,8 +1743,6 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   });
 });
 
-
-
 export {
   getActiveTrainees,
   getTraineesDietAssessment,
@@ -1734,5 +1768,5 @@ export {
   getWeeklySleepForTrainer,
   getTraineeWeeklyWaterIntakeForTrainer,
   getWeeklyStepsForTrainer,
-  getTraineeDataForTrainer
+  getTraineeDataForTrainer,
 };
