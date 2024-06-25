@@ -110,8 +110,8 @@ const foodSchema = new Schema(
         "Mustard",
         "Oats",
         "Rye",
+        "",
       ],
-      default: [],
     },
 
     diseaseCompatibility: {
@@ -135,14 +135,21 @@ const foodSchema = new Schema(
         "Hyperthyroidism",
         "Celiac Disease",
         "Salmonella infection",
+        "",
       ],
-      default: [],
     },
 
     religionrestriction: {
       type: [String],
-      enum: ["Alcohol", "Pork", "Carrion", "Beef", " Meat Products", "Chicken"],
-      default: [],
+      enum: [
+        "Alcohol",
+        "Pork",
+        "Carrion",
+        "Beef",
+        " Meat Products",
+        "Chicken",
+        "",
+      ],
     },
 
     Trainer: {

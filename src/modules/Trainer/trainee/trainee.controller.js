@@ -291,7 +291,13 @@ const getTraineesDietAssessment = catchAsyncError(async (req, res, next) => {
 });
 
 const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
+  const trainerId = req.user.payload.id;
   const id = req.params.id;
+  const status = await SubscriptionModel.findOne({
+    trainerId,
+    traineeId: id,
+    traineeSubscriptionStatus: "Current",
+  }).select("status");
   const data = await traineeModel
     .findById(id)
     .select(
@@ -318,7 +324,7 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
   // //     new AppError("No current diet assessment found for this trainee.", 404)
   // //   );
   // // }
-
+  data.status = status ? status.status : null;
   res.status(200).json({
     status: "success",
     data,
