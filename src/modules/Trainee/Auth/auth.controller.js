@@ -87,7 +87,7 @@ const calculateMacronutrients = async (trainee) => {
 };
 
 const tranieeSignUp = catchAsyncError(async (req, res, next) => {
-  const { firstName, lastName, email, password, phoneNumber } = req.body;
+  const { firstName, lastName, email, password, phoneNumber, fcmToken } = req.body;
   // Check if the email already exists in the database
   const existingUser = await traineeModel.findOne({ email });
   if (existingUser) {
@@ -102,7 +102,8 @@ const tranieeSignUp = catchAsyncError(async (req, res, next) => {
     password,
     phoneNumber,
     OTP,
-    OTPExpires: new Date(Date.now() + 10 * 60 * 1000), // OTP expires in 10 minutes
+    OTPExpires: new Date(Date.now() + 10 * 60 * 1000), 
+    fcmToken 
   });
   await newTrainee.save();
   const sentEmail = await sendEmail(
@@ -358,7 +359,7 @@ const resetPassword = catchAsyncError(async (req, res, next) => {
 });
 
 const traineeSignIn = catchAsyncError(async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, fcmToken } = req.body;
 
   // Check if email and password are provided
   if (!email || !password) {
@@ -383,6 +384,10 @@ const traineeSignIn = catchAsyncError(async (req, res, next) => {
   if (!trainee.isConfirmed) {
     return next(new AppError("Please confirm your email to login", 403));
   }
+
+  // Update FCM token
+  trainee.fcmToken = fcmToken;
+  await trainee.save();
 
   // Generate a token for the trainee
   const token = generateToken(trainee);

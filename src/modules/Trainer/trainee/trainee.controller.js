@@ -328,11 +328,19 @@ const getSpecificTrainee = catchAsyncError(async (req, res, next) => {
 const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   const id = req.params.id;
-  await traineeModel.findByIdAndUpdate(
+  const trainee = await traineeModel.findByIdAndUpdate(
     id,
     { dietAssessmentStatus: "In Preparation" },
     { new: true }
   );
+
+  if (trainee) {
+    const traineeToken = trainee.fcmToken;
+    const title = 'Diet Assessment Request';
+    const body = 'Your diet assessment request is in preparation.';
+    sendNotification(traineeToken, title, body);
+  }
+
   res.status(200).json({
     success: true,
     message: "Request sent successfully",
