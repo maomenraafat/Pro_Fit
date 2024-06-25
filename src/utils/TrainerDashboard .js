@@ -182,7 +182,7 @@ class Dashboard {
       {
         $group: {
           _id: {
-            $dateToString: { /*format: "%Y-%m-%d",*/ date: "$startDate" },
+            $dateToString: { format: "%Y-%m-%d", date: "$startDate" },
           },
           totalPaidAmount: { $sum: "$paidAmount" },
         },
