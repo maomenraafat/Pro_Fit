@@ -403,4 +403,5 @@ export {
   forgetPassword,
   resetPassword,
   traineeSignIn,
+  calculateMacronutrients
 };
