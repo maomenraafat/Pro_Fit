@@ -346,6 +346,8 @@ const getAllCustomizePlans = catchAsyncError(async (req, res, next) => {
     trainer: trainerId,
     trainee: id,
     published: false,
+    originalPlan: { $exists: false },
+    status: { $ne: "First" },
   });
 
   let apiFeatures = new ApiFeatures(baseQuery, req.query)

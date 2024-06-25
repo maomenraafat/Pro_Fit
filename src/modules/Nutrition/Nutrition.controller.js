@@ -161,7 +161,8 @@ const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   let Query = {
     trainer: trainerId,
     plantype: "Free plan",
-    originalPlan: { $ne: true },
+    // originalPlan: { $ne: true },
+    trainee: { $exists: false },
   };
   const allData = await nutritionModel.find(Query);
   let apiFeatures = new ApiFeatures(nutritionModel.find(Query), req.query)
