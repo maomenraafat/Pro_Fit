@@ -13,7 +13,10 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
   const sortDirection = req.query.sort === "desc" ? -1 : 1;
   const specializationFilter = req.query.specialization;
 
-  let matchStage = {};
+  let matchStage = {
+    status: "accepted"
+  };
+
   if (specializationFilter) {
     matchStage["specializations.label"] = specializationFilter;
   }
@@ -103,6 +106,7 @@ const getAllTrainers = catchAsyncError(async (req, res, next) => {
   });
 });
 
+
 const getTrainerAbout = catchAsyncError(async (req, res, next) => {
   const { trainerId } = req.params;
 
@@ -146,7 +150,7 @@ const getTrainerAbout = catchAsyncError(async (req, res, next) => {
     specializations: trainer.specializations.map((spec) => spec.label),
     email: trainer.email,
     gender: trainer.gender,
-    subscribers: trainer.subscribers,
+    subscribers: trainer.subscriptions,
     qualificationsAndAchievements: trainer.qualificationsAndAchievements.map(
       (qa) => qa.photo
     ),
