@@ -7,13 +7,17 @@ import mongoose from "mongoose";
 import { favoriteDietPlanModel } from "../../../../Database/models/favoriteDietPlan.model.js";
 import { nutritionModel } from "../../../../Database/models/nutrition.model.js";
 import { traineeModel } from "../../../../Database/models/Trainee.model.js";
-
+import { traineeBasicInfoModel } from "../../../../Database/models/traineeBasicInfo.model.js";
+import { calculateMacronutrients } from "../Auth/auth.controller.js";
 const getAllTrainers = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
   const sortDirection = req.query.sort === "desc" ? -1 : 1;
   const specializationFilter = req.query.specialization;
 
-  let matchStage = {};
+  let matchStage = {
+    status: "accepted"
+  };
+
   if (specializationFilter) {
     matchStage["specializations.label"] = specializationFilter;
   }
@@ -146,7 +150,7 @@ const getTrainerAbout = catchAsyncError(async (req, res, next) => {
     specializations: trainer.specializations.map((spec) => spec.label),
     email: trainer.email,
     gender: trainer.gender,
-    subscribers: trainer.subscribers,
+    subscribers: trainer.subscriptions,
     qualificationsAndAchievements: trainer.qualificationsAndAchievements.map(
       (qa) => qa.photo
     ),
@@ -253,12 +257,18 @@ const getNutritionFreePlansForTrainer = catchAsyncError(async (req, res, next) =
 const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
 
+  // Get trainee's basic info for macronutrient calculation
+  const trainee = await traineeBasicInfoModel.findOne({ trainee: traineeId }).populate("trainee");
+
+  // Calculate macronutrients for the trainee
+  const { macros: traineeMacros } = await calculateMacronutrients(trainee);
+
   // Get IDs of all favorite diet plans for this trainee
   const favorites = await favoriteDietPlanModel.find({ trainee: traineeId });
   const favoriteIds = new Set(favorites.map(fav => fav.dietPlan.toString()));
 
-  // Get dietType and mealsCount from query parameters
-  const { dietType, mealsCount } = req.query;
+  // Get dietType, mealsCount, and calorieFilter from query parameters
+  const { dietType, mealsCount, calorieFilter } = req.query;
 
   // Start building the aggregation pipeline with a basic match for free plans
   let pipeline = [
@@ -268,6 +278,31 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   // Filter by dietType if provided
   if (dietType) {
     pipeline.push({ $match: { dietType: dietType } });
+  }
+
+  // Filter by calorie range if provided
+  if (calorieFilter) {
+    let calorieMatch = {};
+    switch (calorieFilter) {
+      case "smallerThan1000":
+        calorieMatch = { "planmacros.calories": { $lt: 1000 } };
+        break;
+      case "between1000and2000":
+        calorieMatch = { "planmacros.calories": { $gte: 1000, $lte: 2000 } };
+        break;
+      case "between2000and3000":
+        calorieMatch = { "planmacros.calories": { $gte: 2000, $lte: 3000 } };
+        break;
+      case "between3000and4000":
+        calorieMatch = { "planmacros.calories": { $gte: 3000, $lte: 4000 } };
+        break;
+      case "biggerThan4000":
+        calorieMatch = { "planmacros.calories": { $gt: 4000 } };
+        break;
+      default:
+        break;
+    }
+    pipeline.push({ $match: calorieMatch });
   }
 
   // Calculate meals count per day in the days array
@@ -331,6 +366,25 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
     { $addFields: { averageRating: { $ifNull: ["$averageRating", 0] }, reviewCount: { $ifNull: ["$reviewCount", 0] } } }
   );
 
+  // Filter by nearest macros
+  pipeline.push(
+    {
+      $addFields: {
+        macroDifference: {
+          $sqrt: {
+            $sum: [
+              { $pow: [{ $subtract: ["$planmacros.calories", traineeMacros.calories] }, 2] },
+              { $pow: [{ $subtract: ["$planmacros.proteins", traineeMacros.proteins] }, 2] },
+              { $pow: [{ $subtract: ["$planmacros.fats", traineeMacros.fats] }, 2] },
+              { $pow: [{ $subtract: ["$planmacros.carbs", traineeMacros.carbs] }, 2] }
+            ]
+          }
+        }
+      }
+    },
+    { $sort: { macroDifference: 1 } } // Sort by closest macros
+  );
+
   // Execute the aggregation pipeline
   const freePlans = await nutritionModel.aggregate(pipeline);
 
@@ -356,9 +410,6 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
       fats: plan.planmacros.fats,
       rating: plan.averageRating,
       reviewCount: plan.reviewCount,
-      goal: plan.goal || "Weight Loss",
-      duration: `${plan.daysCount} Days`,
-      mealsCount: plan.days[0].mealsCount,
       isFavorite: favoriteIds.has(plan._id.toString()),
       name: trainer ? `${trainer.firstName} ${trainer.lastName}` : null,
       profilePhoto: trainer ? trainer.profilePhoto : null
@@ -569,6 +620,7 @@ const getDailyNeeds = catchAsyncError(async (req, res, next) => {
       select: "dailymacros -_id" 
     });
 
+    console.log(traineeData);
   if (!traineeData || !traineeData.traineeBasicInfo) {
     return res.status(404).json({
       success: false,
@@ -626,6 +678,20 @@ const getMealsCounts = catchAsyncError(async (req, res, next) => {
     data: mealsCounts
   });
 });
+const caloriesFilter = catchAsyncError((req, res) => {
+  const calorieFilters = [
+    { label: "< 1000", value: "smallerThan1000" },
+    { label: "1000 - 2000", value: "between1000and2000" },
+    { label: "2000 - 3000", value: "between2000and3000" },
+    { label: "3000 - 4000", value: "between3000and4000" },
+    { label: "> 4000", value: "biggerThan4000" }
+  ];
+
+  res.status(200).json({
+    success: true,
+    data: calorieFilters
+  });
+});
 // const getAllFavoriteDietPlans = catchAsyncError(async (req, res, next) => {
 //   const traineeId = req.user.payload.id;
 
@@ -665,5 +731,6 @@ export {
   getAllNutritionFreePlans,
   getDailyNeeds,
   getDietTypes,
-  getMealsCounts
+  getMealsCounts,
+  caloriesFilter
 };
