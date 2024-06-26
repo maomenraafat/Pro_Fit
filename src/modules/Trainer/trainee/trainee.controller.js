@@ -597,6 +597,7 @@ const trackingCurrentTraineePlan = catchAsyncError(async (req, res, next) => {
     return res.status(400).json({ message: "Trainee ID is required" });
   }
   const nutritionData = await getNutritionPlanData(traineeId);
+  console.log(nutritionData);
   res.status(200).json({
     success: true,
     message: "Successfully retrieved nutrition tracking data",
