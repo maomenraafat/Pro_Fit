@@ -4,6 +4,27 @@ import { freeDietPlanSubscription } from "../../../../../Database/models/freeDie
 import mongoose from "mongoose";
 import { getNutritionPlanData } from "../../../../utils/factor.js";
 
+const trackingCurrentPlan = catchAsyncError(async (req, res, next) => {
+  const traineeId = req.params.id;
+
+  if (!traineeId) {
+    return res.status(400).json({ message: "Trainee ID is required" });
+  }
+  const nutritionData = await getNutritionPlanData(traineeId);
+  res.status(200).json({
+    success: true,
+    message: "Successfully retrieved nutrition tracking data",
+    data: {
+      Diet: nutritionData,
+      Workout: {
+        totalExercises: 0,
+        totalExercisesDone: 0,
+        percentage: 0,
+      },
+    },
+  });
+});
+
 const trackingPlans = catchAsyncError(async (req, res, next) => {
   const traineeId = req.user.payload.id;
   const period = req.params.period || 999999999;
@@ -86,4 +107,4 @@ const trackingPlans = catchAsyncError(async (req, res, next) => {
   });
 });
 
-export { trackingPlans };
+export { trackingPlans, trackingCurrentPlan };
