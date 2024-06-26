@@ -17,7 +17,6 @@ const deleteUser = async (userId, model) => {
     return { success: false, status: 500, message: error.message };
   }
 };
-
 const getNutritionPlanData = async (traineeId) => {
   let nutritionPlan;
   let days = [];
@@ -42,12 +41,16 @@ const getNutritionPlanData = async (traineeId) => {
   }
 
   if (days.length === 0) {
-    throw new Error("Nutrition plan not found");
+    return {
+      totalDayMacros: 0,
+      totalEatenDayMacros: 0,
+      percentage: 0,
+    };
   }
 
   let totalDayMacros = { calories: 0 /*proteins: 0, fats: 0, carbs: 0*/ };
   let totalEatenDaysMacros = {
-    calories: 0 /* proteins: 0, fats: 0, carbs: 0*/,
+    calories: 0 /*proteins: 0, fats: 0, carbs: 0*/,
   };
 
   days.forEach((day) => {
@@ -74,6 +77,78 @@ const getNutritionPlanData = async (traineeId) => {
     percentage: percentageCalories,
   };
 };
+// const getNutritionPlanData = async (traineeId) => {
+//   let nutritionPlan;
+//   let days = [];
+
+//   const subscriptionWithTrainer = await nutritionModel.findOne({
+//     trainee: traineeId,
+//     status: "Current",
+//     plantype: "Customized plan",
+//   });
+
+//   if (subscriptionWithTrainer) {
+//     nutritionPlan = subscriptionWithTrainer;
+//     days = nutritionPlan.days;
+//   } else {
+//     const freeDietSubscription = await freeDietPlanSubscription.findOne({
+//       trainee: traineeId,
+//     });
+
+//     if (freeDietSubscription && freeDietSubscription.days) {
+//       days = freeDietSubscription.days;
+//     }
+//   }
+
+//   if (days.length === 0) {
+//     return {
+//       success: true,
+//       message: "No data found for this trainer.",
+//       data: {
+//         Diet: {
+//           day: 0,
+//           startDate: "",
+//           totalDayMacros: 0,
+//           totalEatenDayMacros: 0,
+//         },
+//         Workout: {
+//           totalExercises: 0,
+//           totalExercisesDone: 0,
+//           percentage: 0,
+//           // },
+//         },
+//       },
+//     };
+//   }
+//   let totalDayMacros = { calories: 0 /*proteins: 0, fats: 0, carbs: 0*/ };
+//   let totalEatenDaysMacros = {
+//     calories: 0 /* proteins: 0, fats: 0, carbs: 0*/,
+//   };
+
+//   days.forEach((day) => {
+//     totalDayMacros.calories += day.daymacros?.calories || 0;
+//     // totalDayMacros.proteins += day.daymacros?.proteins || 0;
+//     // totalDayMacros.fats += day.daymacros?.fats || 0;
+//     // totalDayMacros.carbs += day.daymacros?.carbs || 0;
+
+//     totalEatenDaysMacros.calories += day.eatenDaysMacros?.calories || 0;
+//     // totalEatenDaysMacros.proteins += day.eatenDaysMacros?.proteins || 0;
+//     // totalEatenDaysMacros.fats += day.eatenDaysMacros?.fats || 0;
+//     // totalEatenDaysMacros.carbs += day.eatenDaysMacros?.carbs || 0;
+//   });
+
+//   const percentageCalories = totalDayMacros.calories
+//     ? Math.round(
+//         (totalEatenDaysMacros.calories / totalDayMacros.calories) * 100
+//       )
+//     : 0;
+
+//   return {
+//     totalDayMacros: totalDayMacros.calories,
+//     totalEatenDaysMacros: totalEatenDaysMacros.calories,
+//     percentage: percentageCalories,
+//   };
+// };
 
 const getReviewsData = async (trainerId, traineeId) => {
   const reviews = await reviewModel
