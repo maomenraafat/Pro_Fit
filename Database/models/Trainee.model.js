@@ -52,6 +52,11 @@ const traineeSchema = new Schema(
       default: "Not Allowed",
     },
 
+    fcmToken: {
+      type: String,
+      default: null,
+    },
+
     //-------------------------------------------------------------------------------------------------------------------------
 
     assignedTrainer: {

@@ -5,6 +5,7 @@ import { verifyTokenSocket } from '../src/middlewares/authToken.js';
 import { conversationModel } from '../Database/models/conversation.model.js';
 import { messageModel } from '../Database/models/message.model.js';
 import { uploadImageToCloudinary } from '../src/utils/cloudinary.js';
+import { catchAsyncError } from '../src/utils/catchAsyncError.js';
 
 const app = express();
 const server = http.createServer(app);
