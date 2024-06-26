@@ -62,6 +62,8 @@ const foodSchema = new Schema(
         "Egg",
         "Milk Product",
         "Sauces",
+        "Grain Product",
+        "Grains",
       ],
     },
     dietType: {
@@ -79,7 +81,7 @@ const foodSchema = new Schema(
     },
     mealtype: {
       type: [String],
-      enum: ["Breackfast", "Lunch", "Snack", "Dinner"],
+      enum: ["Breakfast", "Lunch", "Snack", "Dinner"],
       required: false,
     },
     foodAllergens: {
