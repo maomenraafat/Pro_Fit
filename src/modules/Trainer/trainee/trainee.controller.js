@@ -1670,7 +1670,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       .tz("Africa/Cairo")
       .toISOString();
     dataResponse.heartRate = {
-      bpm: heartRateData,
+      value: heartRateData,
       createdAt: recordDate,
     };
   }
@@ -1692,10 +1692,10 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     : 0;
 
   dataResponse.steps = {
-    steps,
+    value: steps,
     distanceKm,
     calories,
-    goal: stepGoal,
+    target: stepGoal,
     percentageComplete: parseFloat(percentageCompleteSteps.toFixed(2)),
   };
 
@@ -1824,6 +1824,8 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     return map;
   }, {});
 
+  const weeklyWaterGoal = 15000; // Specific goal for weekly water intake
+
   const last7DaysWater = Array.from({ length: 7 }).map((_, index) => {
     const date = moment(sevenDaysAgo)
       .add(index, "days")
@@ -1838,6 +1840,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       _id: new ObjectId(),
       value: record.value,
       createdAt: record.createdAt,
+      targer: weeklyWaterGoal,
     };
   });
 
@@ -1849,6 +1852,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     data: dataResponse,
   });
 });
+
 
 export {
   getActiveTrainees,
