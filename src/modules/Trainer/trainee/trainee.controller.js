@@ -1700,11 +1700,8 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   };
 
   // Weekly Data Calculations
-  const today = new Date();
-  today.setHours(today.getHours() + 3);
-  today.setUTCHours(0, 0, 0, 0);
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(today.getDate() - 6);
+  const today = moment().tz("Africa/Cairo").endOf('day').toDate(); // End of today in Cairo time
+  const sevenDaysAgo = moment(today).subtract(6, 'days').startOf('day').toDate(); // Start of 6 days ago in Cairo time
 
   // Get Weekly Steps Data
   const weeklyStepRecords = await StepRecord.find({
@@ -1713,21 +1710,23 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }).sort({ date: 1 });
 
   const stepRecordsMap = weeklyStepRecords.reduce((map, record) => {
-    const adjustedDate = moment(record.date).add(3, "hours").toDate();
-    const date = moment(adjustedDate).startOf("day").format("YYYY-MM-DD");
-    map[date] = { value: record.steps, date: adjustedDate };
+    const date = moment(record.date).tz("Africa/Cairo").startOf('day').format('YYYY-MM-DD');
+    if (!map[date]) {
+      map[date] = { steps: 0, calories: 0 };
+    }
+    map[date].steps += record.steps;
+    map[date].calories += record.calories;
     return map;
   }, {});
 
   const last7DaysSteps = Array.from({ length: 7 }).map((_, index) => {
-    const date = new Date(sevenDaysAgo);
-    date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = date.toISOString().split("T")[0];
-    const record = stepRecordsMap[dateString] || { value: 0, date: dateString };
+    const date = moment(sevenDaysAgo).add(index, 'days').startOf('day').tz('Africa/Cairo').add(3, 'hours');
+    const dateString = date.format('YYYY-MM-DD');
+    const record = stepRecordsMap[dateString] || { steps: 0, calories: 0 };
     return {
-      _id: new ObjectId(),
-      value: record.value,
-      createdAt: moment(record.date).toISOString(),
+      steps: record.steps,
+      calories: record.calories,
+      createdAt: date.toISOString(),
     };
   });
 
