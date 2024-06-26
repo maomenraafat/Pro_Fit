@@ -342,8 +342,8 @@ const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
 
   if (trainee) {
     const traineeToken = trainee.fcmToken;
-    const title = 'Diet Assessment Request';
-    const body = 'Your diet assessment request is in preparation.';
+    const title = "Diet Assessment Request";
+    const body = "Your diet assessment request is in preparation.";
     sendNotification(traineeToken, title, body);
   }
 
