@@ -703,6 +703,7 @@ const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
   if (!traineeId) {
     return res.status(400).json({ message: "Trainee ID is required" });
   }
+
   const nutritionData = await getNutritionPlanData(traineeId);
 
   const dietPlans = await nutritionModel
@@ -770,18 +771,103 @@ const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
     success: true,
     message: "Successfully retrieved nutrition tracking data",
     data: {
-      // currentPlan: {
-      Diet: nutritionData,
-      Workout: {
+      diet: nutritionData,
+      workout: {
         totalExercises: 0,
         totalExercisesDone: 0,
         percentage: 0,
-        // },
       },
       dietDetails: resultDays,
     },
   });
 });
+// const trackingTraineePlans = catchAsyncError(async (req, res, next) => {
+//   const trainerId = req.user.payload.id;
+//   const traineeId = req.params.id;
+//   const period = req.params.period || 999999999;
+
+//   if (!traineeId) {
+//     return res.status(400).json({ message: "Trainee ID is required" });
+//   }
+//   const nutritionData = await getNutritionPlanData(traineeId);
+
+//   const dietPlans = await nutritionModel
+//     .find({
+//       trainer: trainerId,
+//       trainee: traineeId,
+//       plantype: "Customized plan",
+//       status: { $ne: "First" },
+//     })
+//     .select(
+//       "planName trainer trainee daysCount numberofmeals startDate days planmacros plantype published status originalPlan timestamps"
+//     );
+
+//   let allDays = [];
+//   const currentDate = new Date();
+
+//   dietPlans.forEach((plan) => {
+//     const filteredDays = plan.days.filter((day) => {
+//       const dayDate = new Date(day.startDate);
+//       const timeDifference = currentDate - dayDate;
+//       const dayDifference = timeDifference / (1000 * 3600 * 24);
+//       return dayDifference <= period;
+//     });
+
+//     allDays = allDays.concat(filteredDays);
+//   });
+
+//   allDays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+//   let previousDate = null;
+//   const resultDays = [];
+
+//   allDays.forEach((day) => {
+//     const dayDate = new Date(day.startDate);
+
+//     if (previousDate) {
+//       let nextExpectedDate = new Date(
+//         previousDate.getTime() + 24 * 60 * 60 * 1000
+//       );
+
+//       while (nextExpectedDate < dayDate) {
+//         resultDays.push({
+//           day: `Missing Day`,
+//           startDate: nextExpectedDate.toISOString(),
+//           totalDayMacros: 0,
+//           totalEatenDayMacros: 0,
+//         });
+//         nextExpectedDate = new Date(
+//           nextExpectedDate.getTime() + 24 * 60 * 60 * 1000
+//         );
+//       }
+//     }
+
+//     resultDays.push({
+//       day: day.day,
+//       startDate: day.startDate,
+//       totalDayMacros: day.daymacros?.calories || 0,
+//       totalEatenDayMacros: day.eatenDaysMacros?.calories || 0,
+//     });
+
+//     previousDate = dayDate;
+//   });
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Successfully retrieved nutrition tracking data",
+//     data: {
+//       // currentPlan: {
+//       Diet: nutritionData,
+//       Workout: {
+//         totalExercises: 0,
+//         totalExercisesDone: 0,
+//         percentage: 0,
+//         // },
+//       },
+//       dietDetails: resultDays,
+//     },
+//   });
+// });
 
 const updateTraineeWaterGoal = catchAsyncError(async (req, res) => {
   const traineeId = req.params.id;
