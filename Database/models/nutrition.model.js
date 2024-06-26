@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Schema, model } from "mongoose";
 
 const nutritionSchema = new Schema(
@@ -277,6 +278,35 @@ nutritionSchema.virtual("isFavorite", {
   justOne: false,
   count: true,
 });
+
+async function calculateFreePlanSubscribers(originalPlanId) {
+  try {
+    const subscribers = await nutritionModel.aggregate([
+      {
+        $match: {
+          originalPlan: new mongoose.Types.ObjectId(originalPlanId),
+          plantype: "Free plan",
+          trainee: { $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: "$trainee",
+        },
+      },
+      {
+        $count: "subscribersCount",
+      },
+    ]);
+
+    return subscribers.length > 0 ? subscribers[0].subscribersCount : 0;
+  } catch (error) {
+    console.error("Error calculating free plan subscribers:", error);
+    throw error;
+  }
+}
+
+export { calculateFreePlanSubscribers };
 
 export const nutritionModel = model("nutrition", nutritionSchema);
 

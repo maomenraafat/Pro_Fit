@@ -1,4 +1,7 @@
-import { nutritionModel } from "../../../Database/models/nutrition.model.js";
+import {
+  calculateFreePlanSubscribers,
+  nutritionModel,
+} from "../../../Database/models/nutrition.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import { AppError } from "../../utils/AppError.js";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
@@ -156,6 +159,7 @@ const getNutritionMyPlans = catchAsyncError(async (req, res, next) => {
     allData,
   });
 });
+
 const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   const trainerId = req.user.payload.id;
   let Query = {
@@ -177,10 +181,43 @@ const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
   const totalCount = await nutritionModel
     .find(apiFeatures.mongooseQuery.getQuery())
     .countDocuments();
-
   const totalPages = Math.ceil(totalCount / apiFeatures.limit);
+  //   const subscriberCounts = await Promise.all(
+  //     data.map(async (plan) => {
+  //       const subscriberCount = await calculateFreePlanSubscribers(plan._id);
+  //       return {
+  //         planId: plan._id,
+  //         subscriberCount,
+  //       };
+  //     })
+  //   );
+  //   if (data.length === 0) {
+  //     return next(new AppError("No nutrition plans found", 404));
+  //   }
 
-  if (data.length === 0) {
+  //   res.status(200).json({
+  //     status: "success",
+  //     totalDocuments: totalCount,
+  //     totalPages: totalPages,
+  //     page: apiFeatures.page,
+  //     limit: apiFeatures.limit,
+  //     data,
+  //     subscribers: subscriberCounts,
+  //     //allData,
+  //   });
+  // });
+
+  const plansWithSubscribers = await Promise.all(
+    data.map(async (plan) => {
+      const subscriberCount = await calculateFreePlanSubscribers(plan._id);
+      return {
+        ...plan.toObject(),
+        subscribers: subscriberCount,
+      };
+    })
+  );
+
+  if (plansWithSubscribers.length === 0) {
     return next(new AppError("No nutrition plans found", 404));
   }
 
@@ -190,7 +227,7 @@ const getNutritionFreePlans = catchAsyncError(async (req, res, next) => {
     totalPages: totalPages,
     page: apiFeatures.page,
     limit: apiFeatures.limit,
-    data,
+    data: plansWithSubscribers,
     allData,
   });
 });
