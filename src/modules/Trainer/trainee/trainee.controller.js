@@ -1521,16 +1521,12 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   // Initialize data response
   const dataResponse = {};
 
-  // Get Today's Water Intake
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
+  // Get Latest Water Intake
+  const latestWaterRecord = await WaterRecord.findOne({ trainee: id })
+    .sort({ date: -1 })
+    .limit(1);
 
-  const todayWaterRecord = await WaterRecord.findOne({
-    trainee: id,
-    date,
-  });
-
-  const intake = todayWaterRecord ? todayWaterRecord.intake : 0;
+  const intake = latestWaterRecord ? latestWaterRecord.intake : 0;
   const waterGoal = 15000; // Specific goal
   const percentageCompleteWater = waterGoal
     ? parseInt(((intake / waterGoal) * 100).toFixed(2))
@@ -1554,23 +1550,25 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       createdAt: moment().tz("Africa/Cairo").toISOString(),
     };
   } else {
-    const fallAsleepTime = moment("2024-06-21T07:00:00.000Z")
+    const fallAsleepTime = moment(latestSleepData.fallAsleepTime)
       .tz("Africa/Cairo")
       .toISOString();
-    const wakeUpTime = moment("2024-06-21T16:22:00.000Z")
+    const wakeUpTime = moment(latestSleepData.wakeUpTime)
       .tz("Africa/Cairo")
       .toISOString();
     dataResponse.sleepData = {
       _id: latestSleepData._id,
       fallAsleepTime,
       wakeUpTime,
-      createdAt: "2024-06-22T01:57:27.773Z",
+      createdAt: moment(latestSleepData.dateRecorded)
+        .tz("Africa/Cairo")
+        .toISOString(),
     };
   }
 
   // Get Latest Heart Rate Record
   const lastHeartRateRecord = await HeartRate.findOne({ trainee: id })
-    .sort({ _id: -1 })
+    .sort({ createdAt: -1 })
     .limit(1);
 
   if (!lastHeartRateRecord) {
@@ -1579,41 +1577,74 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       createdAt: null,
     };
   } else {
-    const heartRateData = 70; // Specific heart rate
-    const recordDate = "2024-06-22T01:11:39+03:00";
+    const heartRateData = lastHeartRateRecord.bpm;
+    const recordDate = moment(lastHeartRateRecord.createdAt)
+      .tz("Africa/Cairo")
+      .toISOString();
     dataResponse.heartRate = {
       bpm: heartRateData,
       createdAt: recordDate,
     };
   }
 
-  // Get Today's Steps
-  const todayStepRecord = (await StepRecord.findOne({
+  // Get Latest Steps
+  const latestStepRecord = await StepRecord.findOne({
     trainee: id,
-    date: date,
-  })) || { steps: 0, calories: 0 };
+  })
+    .sort({ date: -1 })
+    .limit(1);
 
+  const steps = latestStepRecord ? latestStepRecord.steps : 0;
+  const calories = latestStepRecord ? latestStepRecord.calories : 0;
   const stepsPerKm = 1250;
-  const distanceKm = (todayStepRecord.steps / stepsPerKm).toFixed(3);
+  const distanceKm = (steps / stepsPerKm).toFixed(3);
   const stepGoal = 22000; // Specific goal
   const percentageCompleteSteps = stepGoal
-    ? (todayStepRecord.steps / stepGoal) * 100
+    ? (steps / stepGoal) * 100
     : 0;
 
   dataResponse.steps = {
-    steps: todayStepRecord.steps,
+    steps,
     distanceKm,
-    calories: todayStepRecord.calories,
+    calories,
     goal: stepGoal,
     percentageComplete: parseFloat(percentageCompleteSteps.toFixed(2)),
   };
 
   // Weekly Data Calculations
-  const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today in Cairo time
-  const sevenDaysAgo = moment(today)
-    .subtract(6, "days")
-    .startOf("day")
-    .toDate();
+  const today = new Date();
+  today.setHours(today.getHours() + 3);
+  today.setUTCHours(0, 0, 0, 0);
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
+
+  // Get Weekly Steps Data
+  const weeklyStepRecords = await StepRecord.find({
+    trainee: id,
+    date: { $gte: sevenDaysAgo, $lte: today },
+  }).sort({ date: 1 });
+
+  const stepRecordsMap = weeklyStepRecords.reduce((map, record) => {
+    const adjustedDate = moment(record.date).add(3, "hours").toDate();
+    const date = moment(adjustedDate).startOf("day").format("YYYY-MM-DD");
+    map[date] = { value: record.steps, date: adjustedDate };
+    return map;
+  }, {});
+
+  const last7DaysSteps = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + index);
+    const dateString = date.toISOString().split("T")[0];
+    const record = stepRecordsMap[dateString] || { value: 0, date: dateString };
+    return {
+      _id: new ObjectId(),
+      value: record.value,
+      createdAt: moment(record.date).toISOString(),
+    };
+  });
+
+  dataResponse.weeklySteps = last7DaysSteps;
+
   // Get Weekly Sleep Data
   const weeklySleepRecords = await SleepTrack.find({
     trainee: id,
@@ -1655,33 +1686,6 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   });
 
   dataResponse.weeklySleep = last7DaysSleep;
-
-  // Get Weekly Steps Data
-  const weeklyStepRecords = await StepRecord.find({
-    trainee: id,
-    date: { $gte: sevenDaysAgo, $lte: today },
-  }).sort({ date: 1 });
-
-  const stepRecordsMap = weeklyStepRecords.reduce((map, record) => {
-    const adjustedDate = moment(record.date).add(3, "hours").toDate();
-    const date = moment(adjustedDate).startOf("day").format("YYYY-MM-DD");
-    map[date] = { value: record.steps, date: adjustedDate };
-    return map;
-  }, {});
-
-  const last7DaysSteps = Array.from({ length: 7 }).map((_, index) => {
-    const date = new Date(sevenDaysAgo);
-    date.setDate(sevenDaysAgo.getDate() + index);
-    const dateString = date.toISOString().split("T")[0];
-    const record = stepRecordsMap[dateString] || { value: 0, date: dateString };
-    return {
-      _id: new ObjectId(),
-      value: record.value,
-      createdAt: moment(record.date).toISOString(),
-    };
-  });
-
-  dataResponse.weeklySteps = last7DaysSteps;
 
   // Get Weekly Heart Rate Data
   let heartRateRecords = await HeartRate.find({
