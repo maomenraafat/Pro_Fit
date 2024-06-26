@@ -1615,7 +1615,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     .limit(1);
 
   const intake = latestWaterRecord ? latestWaterRecord.intake : 0;
-  const waterGoal = 15000; // Specific goal
+  const waterGoal = 2000; // Specific goal
   const percentageCompleteWater = waterGoal
     ? parseInt(((intake / waterGoal) * 100).toFixed(2))
     : 0;
@@ -1633,8 +1633,8 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
 
   if (!latestSleepData) {
     dataResponse.sleepData = {
-      hours: 0,
-      minutes: 0,
+      fallAsleepTime: 0,
+      wakeUpTime: 0,
       createdAt: moment().tz("Africa/Cairo").toISOString(),
     };
   } else {
@@ -1661,8 +1661,8 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
 
   if (!lastHeartRateRecord) {
     dataResponse.heartRate = {
-      bpm: null,
-      createdAt: null,
+      value: 0,
+      createdAt: moment().tz("Africa/Cairo").toISOString(),
     };
   } else {
     const heartRateData = lastHeartRateRecord.bpm;
@@ -1686,7 +1686,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   const calories = latestStepRecord ? latestStepRecord.calories : 0;
   const stepsPerKm = 1250;
   const distanceKm = (steps / stepsPerKm).toFixed(3);
-  const stepGoal = 22000; // Specific goal
+  const stepGoal = 10000; // Specific goal
   const percentageCompleteSteps = stepGoal
     ? (steps / stepGoal) * 100
     : 0;
@@ -1824,7 +1824,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     return map;
   }, {});
 
-  const weeklyWaterGoal = 15000; // Specific goal for weekly water intake
+  const weeklyWaterGoal = 2000; // Specific goal for weekly water intake
 
   const last7DaysWater = Array.from({ length: 7 }).map((_, index) => {
     const date = moment(sevenDaysAgo)
