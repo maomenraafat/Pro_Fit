@@ -272,7 +272,8 @@ const getAllNutritionFreePlans = catchAsyncError(async (req, res, next) => {
 
   // Start building the aggregation pipeline with a basic match for free plans
   let pipeline = [
-    { $match: { plantype: "Free plan" } }
+    { $match: { plantype: "Free plan" ,published: true} 
+  }
   ];
 
   // Filter by dietType if provided
