@@ -42,8 +42,8 @@ const getNutritionPlanData = async (traineeId) => {
 
   if (days.length === 0) {
     return {
-      totalDayMacros: 0,
-      totalEatenDayMacros: 0,
+      totalDaysMacros: 0,
+      totalEatenDaysMacros: 0,
       percentage: 0,
     };
   }
@@ -72,7 +72,7 @@ const getNutritionPlanData = async (traineeId) => {
     : 0;
 
   return {
-    totalDayMacros: totalDayMacros.calories,
+    totalDaysMacros: totalDayMacros.calories,
     totalEatenDaysMacros: totalEatenDaysMacros.calories,
     percentage: percentageCalories,
   };
