@@ -1818,9 +1818,10 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     const dateString = date.format("YYYY-MM-DD");
     const record = stepRecordsMap[dateString] || { steps: 0, calories: 0 };
     return {
-      steps: record.steps,
+      value: record.steps,
       calories: record.calories,
       createdAt: date.toISOString(),
+      target: stepGoal,
     };
   });
 
@@ -1934,7 +1935,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
       _id: new ObjectId(),
       value: record.value,
       createdAt: record.createdAt,
-      targer: weeklyWaterGoal,
+      target: weeklyWaterGoal,
     };
   });
 
@@ -1946,6 +1947,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     data: dataResponse,
   });
 });
+
 
 export {
   getActiveTrainees,
