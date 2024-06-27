@@ -340,12 +340,12 @@ const makeRequestAssessment = catchAsyncError(async (req, res, next) => {
     { new: true }
   );
 
-  if (trainee) {
-    const traineeToken = trainee.fcmToken;
-    const title = "Diet Assessment Request";
-    const body = "Your diet assessment request is in preparation.";
-    sendNotification(traineeToken, title, body);
-  }
+  // if (trainee) {
+  //   const traineeToken = trainee.fcmToken;
+  //   const title = "Diet Assessment Request";
+  //   const body = "Your diet assessment request is in preparation.";
+  //   sendNotification(traineeToken, title, body);
+  // }
 
   res.status(200).json({
     success: true,
@@ -1773,9 +1773,7 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   const stepsPerKm = 1250;
   const distanceKm = (steps / stepsPerKm).toFixed(3);
   const stepGoal = 22000; // Specific goal
-  const percentageCompleteSteps = stepGoal
-    ? (steps / stepGoal) * 100
-    : 0;
+  const percentageCompleteSteps = stepGoal ? (steps / stepGoal) * 100 : 0;
 
   dataResponse.steps = {
     value: steps,
@@ -1786,8 +1784,11 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   };
 
   // Weekly Data Calculations
-  const today = moment().tz("Africa/Cairo").endOf('day').toDate(); // End of today in Cairo time
-  const sevenDaysAgo = moment(today).subtract(6, 'days').startOf('day').toDate(); // Start of 6 days ago in Cairo time
+  const today = moment().tz("Africa/Cairo").endOf("day").toDate(); // End of today in Cairo time
+  const sevenDaysAgo = moment(today)
+    .subtract(6, "days")
+    .startOf("day")
+    .toDate(); // Start of 6 days ago in Cairo time
 
   // Get Weekly Steps Data
   const weeklyStepRecords = await StepRecord.find({
@@ -1796,7 +1797,10 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }).sort({ date: 1 });
 
   const stepRecordsMap = weeklyStepRecords.reduce((map, record) => {
-    const date = moment(record.date).tz("Africa/Cairo").startOf('day').format('YYYY-MM-DD');
+    const date = moment(record.date)
+      .tz("Africa/Cairo")
+      .startOf("day")
+      .format("YYYY-MM-DD");
     if (!map[date]) {
       map[date] = { steps: 0, calories: 0 };
     }
@@ -1806,8 +1810,12 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
   }, {});
 
   const last7DaysSteps = Array.from({ length: 7 }).map((_, index) => {
-    const date = moment(sevenDaysAgo).add(index, 'days').startOf('day').tz('Africa/Cairo').add(3, 'hours');
-    const dateString = date.format('YYYY-MM-DD');
+    const date = moment(sevenDaysAgo)
+      .add(index, "days")
+      .startOf("day")
+      .tz("Africa/Cairo")
+      .add(3, "hours");
+    const dateString = date.format("YYYY-MM-DD");
     const record = stepRecordsMap[dateString] || { steps: 0, calories: 0 };
     return {
       steps: record.steps,
@@ -1938,7 +1946,6 @@ const getTraineeDataForTrainer = catchAsyncError(async (req, res) => {
     data: dataResponse,
   });
 });
-
 
 export {
   getActiveTrainees,

@@ -112,6 +112,8 @@ const subscribeToFreeDietPlan = catchAsyncError(async (req, res, next) => {
   const { startDate } = req.body;
 
   const dietPlan = await nutritionModel.findById(planId).populate("days");
+
+  console.log(dietPlan);
   if (!dietPlan) {
     return next(new AppError("Diet plan not found", 404));
   }
@@ -199,7 +201,7 @@ const getDietPlan = catchAsyncError(async (req, res, next) => {
     .select(
       "_id planName trainer trainee daysCount numberofmeals startDate days planmacros plantype published status originalPlan timestamps"
     )
-    .sort({ startDate: -1 })
+    .sort({ createdAt: -1 })
     .limit(1);
 
   if (DietPlan.length > 0) {
