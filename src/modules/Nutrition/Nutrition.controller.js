@@ -18,6 +18,7 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     daysCount,
     goal,
     dietType,
+    published,
     numberOfWeeks,
   } = req.body;
 
@@ -47,6 +48,7 @@ const addNutritionPlan = catchAsyncError(async (req, res, next) => {
     daysCount /*: newDays.length,*/,
     goal,
     dietType,
+    published,
     numberOfWeeks,
   });
 
